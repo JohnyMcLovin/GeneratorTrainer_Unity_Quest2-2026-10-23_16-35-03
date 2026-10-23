@@ -1,0 +1,178 @@
+newmtl Paint
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Paint.png
+newmtl DarkMetal
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/DarkMetal.png
+newmtl Steel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Steel.png
+newmtl Black
+Kd 0.018 0.022 0.021
+Ks 0.2 0.2 0.2
+Ns 20
+newmtl White
+Kd 0.78 0.8 0.76
+Ks 0.2 0.2 0.2
+Ns 20
+newmtl Red
+Kd 0.63 0.035 0.02
+Ks 0.2 0.2 0.2
+Ns 20
+newmtl Green
+Kd 0.025 0.42 0.1
+Ks 0.2 0.2 0.2
+Ns 20
+newmtl Amber
+Kd 0.95 0.56 0.03
+Ks 0.2 0.2 0.2
+Ns 20
+newmtl Display
+Kd 0.03 0.12 0.13
+Ks 0.2 0.2 0.2
+Ns 20
+newmtl FuelCan
+Kd 0.25 0.32 0.18
+Ks 0.2 0.2 0.2
+Ns 20
+newmtl Hazard
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Hazard.png
+newmtl PPE
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/PPE.png
+newmtl Diesel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Diesel.png
+newmtl Instructions
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Instructions.png
+newmtl Label_OutletLabel0
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_OutletLabel0.png
+newmtl Label_OutletLabel1
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_OutletLabel1.png
+newmtl Label_OutletLabel2
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_OutletLabel2.png
+newmtl Label_Brand
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_Brand.png
+newmtl Label_DisplayText
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_DisplayText.png
+newmtl Label_MCBText
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_MCBText.png
+newmtl Label_FUELText
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_FUELText.png
+newmtl Label_BATTERYText
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_BATTERYText.png
+newmtl Label_KeyLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_KeyLabel.png
+newmtl Label_ModeLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_ModeLabel.png
+newmtl Label_StopLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_StopLabel.png
+newmtl Label_StartLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_StartLabel.png
+newmtl Label_EstopLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_EstopLabel.png
+newmtl Label_CoverLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_CoverLabel.png
+newmtl Label_ChargeLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_ChargeLabel.png
+newmtl Label_CanLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_CanLabel.png
+newmtl Label_ChargerText
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_ChargerText.png
+newmtl Label_BoardTitle
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_BoardTitle.png
+newmtl Label_StepText
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_StepText.png
+newmtl Label_FeedbackText
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_FeedbackText.png
+newmtl Label_BoardPPELabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_BoardPPELabel.png
+newmtl Label_BoardCheckLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_BoardCheckLabel.png
+newmtl Label_BoardResetLabel
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 20
+map_Kd Textures/Label_BoardResetLabel.png

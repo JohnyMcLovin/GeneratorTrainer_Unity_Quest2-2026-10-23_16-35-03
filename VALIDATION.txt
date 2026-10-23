@@ -1,0 +1,14 @@
+STATIC VALIDATION
+155 mesh parts, 5936 triangles (before editable text).
+25 interaction targets. 27 guided prompts.
+All geometry indices, normals and UV counts passed checks.
+All parent, mesh, material, texture and runtime node references passed checks.
+All C# files passed tree-sitter syntax parsing.
+Open/closed OBJ exports and texture previews generated and visually inspected.
+Unitypackage and ZIP structure / CRC checked during packaging.
+
+NOT EXECUTED HERE
+Unity C# compilation, Editor Play Mode, procedure self-tests, Android build,
+Meta Quest 2 hand tracking and headset performance.
+Use Tools > Generator Trainer > 4 - Run Procedure Checks in Unity.
+See SETUP_QUEST.md for on-device acceptance checks.

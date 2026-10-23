@@ -1,0 +1,384 @@
+{
+  "units": "metres",
+  "coordinate_system": "source Y-up, front +Z",
+  "parts": [
+    {
+      "file": "Assembly_Body.obj",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_DoorPivot.obj",
+      "position": [
+        -1.355,
+        1.0,
+        0.65
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_CoverPivot.obj",
+      "position": [
+        -0.78,
+        0.91,
+        0.735
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_ExhaustPivot.obj",
+      "position": [
+        0.62,
+        1.78,
+        -0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_ModePivot.obj",
+      "position": [
+        -0.92,
+        1.08,
+        0.68
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_StopPivot.obj",
+      "position": [
+        -0.68,
+        1.09,
+        0.68
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_StartPivot.obj",
+      "position": [
+        -0.68,
+        1.25,
+        0.68
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_EstopPivot.obj",
+      "position": [
+        -0.33,
+        1.1,
+        0.67
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_CapPivot.obj",
+      "position": [
+        1.16,
+        0.63,
+        0.69
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_BreakerPivot0.obj",
+      "position": [
+        -0.925,
+        0.8,
+        0.715
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_BreakerPivot1.obj",
+      "position": [
+        -0.8300000000000001,
+        0.8,
+        0.715
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_BreakerPivot2.obj",
+      "position": [
+        -0.7350000000000001,
+        0.8,
+        0.715
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_BreakerPivot3.obj",
+      "position": [
+        -0.64,
+        0.8,
+        0.715
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_MCBLamp.obj",
+      "position": [
+        -1.13,
+        0.83,
+        0.669
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_FUELLamp.obj",
+      "position": [
+        -1.13,
+        0.68,
+        0.669
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_BATTERYLamp.obj",
+      "position": [
+        -1.13,
+        0.53,
+        0.669
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_StartReadyLamp.obj",
+      "position": [
+        -0.8,
+        1.25,
+        0.67
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Part_KeyRing.obj",
+      "position": [
+        -1.13,
+        1.08,
+        0.65
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Prop_KeyProp.obj",
+      "position": [
+        -1.7,
+        0.9,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Prop_CanPivot.obj",
+      "position": [
+        1.72,
+        0.72,
+        0.68
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "Prop_ChargerProp.obj",
+      "position": [
+        -1.72,
+        0.5,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}
