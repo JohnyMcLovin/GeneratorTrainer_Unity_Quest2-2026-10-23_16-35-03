@@ -1,0 +1,27 @@
+step_id,phase,order_mode,requires,fault,detection,description,unity_object,image
+A1,A_safety,any,,ALL,grab_or_toggle,Put on safety glasses and ear protection (blue stickers on the unit show both are required),Optional PPE items or checkbox,
+A2,A_safety,any,,ALL,look_confirm,"Check the exhaust pipe points outdoors or to a vent, never into the room",Reversible exhaust pipe,
+A3,A_safety,any,,ALL,look_confirm,"Check the side E-STOP is not pressed in; if it is, twist to release",E-STOP (may not be a separate mesh),
+A4,A_safety,seq,A1;A2;A3,ALL,open,Open the control panel door using the handle,Hinged door + handle,
+A5,A_safety,any,A4,ALL,look_confirm,Read the Operating Instructions plate on the inside of the door,Door plate (highlightable),Image 1
+A6,A_safety,any,A4,ALL,look_confirm,"Look at the three warning lights and note which are red: MCB (top), fuel (middle), battery (bottom)",Emissive indicators,Image 2
+B1,B_activate,seq,A4,ALL,place,Insert the key into the key switch; ring lights green,Removable key + ring light,Image 3
+B2,B_activate,any,B1,ALL,turn,Turn the mode switch to MAN,MAN/OFF/AUTO switch,Image 4
+B3,B_activate,any,B1,ALL,press_or_pull,Make sure the red STOP button on the panel is released (pulled out),STOP button,
+C1,C_mcb,seq,B2;B3,MCB,open,Lift the MCB cover,Pivoting breaker cover,
+C2,C_mcb,seq,C1,MCB,look_confirm,Find the breaker in the down (OFF) position; that is the tripped one,Four breakers,Image 5
+C3,C_mcb,seq,C2,MCB,toggle,Flip the tripped breaker up to ON,Tripped breaker,
+C4,C_mcb,seq,C3,MCB,close,Close the cover; MCB light turns green,MCB indicator + cover,
+D1,D_fuel,seq,B2;B3,FUEL,move_to_zone,Go to the fuel filler on the right side (the one with the D diesel sticker),Fuel filler area trigger,
+D2,D_fuel,seq,D1,FUEL,remove,Remove the fuel cap,Removable fuel cap,Image 6
+D3,D_fuel,seq,D2,FUEL,place_in_zone,Fill with diesel only (wrong port = wrong action),"Fuel-can prop + trigger zone (custom, not in asset)",
+D4,D_fuel,seq,D3,FUEL,place,Put the cap back and tighten; fuel light turns green,Fuel cap + fuel indicator,
+E1,E_battery,seq,B2;B3,BATTERY,place,Connect the charger cable to the BAT. CHARGE / JUMP START socket,Removable cable + socket,Image 7
+E2,E_battery,seq,E1,BATTERY,wait_then_remove,"Wait until the battery light turns green, then disconnect the cable",Battery indicator + cable,
+F1,F_start,seq,C4|D4|E2 (all active faults),ALL,look_confirm,Check all three warning lights and the light beside START are green; if any is red go back to that part,All indicators,Image 8
+F2,F_start,seq,F1,ALL,press,Press the green START button (pressing with a red lamp = wrong action),START button,
+F3,F_start,seq,F2,ALL,look_confirm,Check the display turns on with no fault shown and the engine is running,Display mesh + engine sound,
+G1,G_shutdown,seq,F3,ALL,press,Press the STOP button,STOP button,
+G2,G_shutdown,seq,G1,ALL,turn,Turn the mode switch to OFF,Mode switch,
+G3,G_shutdown,seq,G2,ALL,remove,Remove the key,Key,
+G4,G_shutdown,seq,G3,ALL,close,Close the control panel door,Hinged door,
