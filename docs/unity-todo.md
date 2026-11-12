@@ -8,7 +8,9 @@ Changes that need someone with the Unity editor (2023.1.22f1) open. Tick and add
 - [ ] Merge `anvar` into `main` **in Unity** (LFS conversion + `PanelDoor` + XR Interaction Setup). Open `GeneratorTraining.unity` afterwards, check the door, exhaust and XR rig, then save and commit.
 - [ ] Re-save `Assets/GeneratorModel/Scripts/Generator/ExhaustPipe.cs` as UTF-8 (currently Windows-1252, CRLF).
 - [ ] Add `GeneratorTraining.unity` to **File > Build Settings > Scenes In Build**.
-- [ ] Run **Tools > Generator Trainer > 4 - Run Procedure Checks**. Note pass/fail here.
+- [x] Run **Tools > Generator Trainer > 4 - Run Procedure Checks**. Note pass/fail here. 
+"PASS: 27-step training flow, timers, sequencing, start interlocks, emergency stop and safe shutdown"
+Done on 04.11.2026 by Anvar Khaydarov
 
 ## Decide D9 (panel base), then
 
