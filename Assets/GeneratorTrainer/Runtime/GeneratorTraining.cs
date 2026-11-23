@@ -11,9 +11,15 @@ namespace GeneratorTrainer
         readonly Dictionary<string, Material> lamps = new Dictionary<string, Material>();
         readonly Dictionary<string, Vector3> rest = new Dictionary<string, Vector3>();
         LineRenderer chargerCord;
+        RunLogger log;
+        string StepId()
+        {
+            return state.Current.Split(' ')[0];
+        }
         Transform Node(string name) { Transform v; return nodes.TryGetValue(name, out v) ? v : null; }
         void Awake()
         {
+            log = new RunLogger(); 
             foreach (Transform t in GetComponentsInChildren<Transform>(true))
             { nodes[t.name] = t; rest[t.name] = t.localPosition; }
             foreach (string n in new[] { "MCBLamp", "FUELLamp", "BATTERYLamp", "StartReadyLamp", "KeyRing" })
@@ -27,12 +33,34 @@ namespace GeneratorTrainer
         }
         public void Interact(string action, int index)
         {
-            if (action == "Reset") { state = new TrainingState(); return; }
+            string before = StepId();
+            if (action == "Reset") 
+            {
+                log.Row(before, action, "reset", "A1", "Run restarted");
+                state = new TrainingState();
+                log = new RunLogger(); 
+                return; 
+            }
+            int oldStep = state.step;
+            bool wasRunning = state.running, wasComplete = state.Complete;
             state.Act(action, index);
+            string result = "wrong";
+
+            if (wasComplete) result = "after_end";
+            else if (state.step > oldStep) result = "correct";
+            else if (action == "Estop" && oldStep > 2) result = "emergency";
+            else if (action == "Stop" && wasRunning && !state.running) result = "emergency";
+            else if (action == "Fuel" && state.pouring) result = "started";
+
+            string name = action == "Breaker" ? "Breaker" + (index + 1) : action;
+            log.Row(before, name, result, StepId(), state.feedback);
         }
         void Update()
         {
+            string beforeTick = StepId();
+            int tickStep = state.step;
             state.Tick(Time.deltaTime);
+            if (state.step > tickStep) log.Row(beforeTick, "Timer", "auto", StepId(), state.feedback);
             Rotate("DoorPivot", new Vector3(0, state.doorOpen ? -115 : 0, 0));
             Rotate("CoverPivot", new Vector3(state.coverOpen ? -125 : 0, 0, 0));
             Rotate("ExhaustPivot", new Vector3(0, state.exhaustSafe ? 180 : 0, 0));
