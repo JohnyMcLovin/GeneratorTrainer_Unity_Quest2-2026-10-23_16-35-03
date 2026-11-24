@@ -1,4 +1,5 @@
 using System.IO;
+using Fusion;
 using GeneratorTrainer.Multiplayer;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -7,10 +8,11 @@ using UnityEngine.Rendering;
 
 namespace GeneratorTrainer.Editor
 {
-    // Milestone 2: builds Assets/Scenes/MultiplayerDesktop.unity, a first-person desktop scene around the SAME
-    // generator prefab as the other scenes, plus the DesktopPlayer prefab that Milestone 3 will network.
-    // Nothing existing is modified: the only change is a per-scene override that turns off the generator's own
-    // mouse click (desktopControls), because the player's crosshair interactor replaces it here.
+    // Builds Assets/Scenes/MultiplayerDesktop.unity around the SAME generator prefab as the other scenes, plus the
+    // networked DesktopPlayer prefab (Photon Fusion). The scene has a session menu (Create / Join with a code); each
+    // computer spawns its own first-person player after connecting. The scene is added to Build Settings.
+    // The generator itself is untouched: the only change is a per-scene override that turns off its own mouse click
+    // (desktopControls), because the player's crosshair interactor replaces it here.
     // Batch: Unity.exe -batchmode -quit -projectPath . -executeMethod GeneratorTrainer.Editor.MultiplayerSceneBuilder.Create
     public static class MultiplayerSceneBuilder
     {
@@ -45,25 +47,51 @@ namespace GeneratorTrainer.Editor
 
             BuildEnvironment();
 
-            // Local player, in front of the control panel, facing the generator.
-            var player = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab, scene);
-            player.transform.position = new Vector3(-0.4f, 0.05f, 3.2f);
-            player.transform.rotation = Quaternion.Euler(0, 180, 0);
+            // Milestone 3: players are no longer placed in the scene; each computer spawns its own player when it
+            // connects. Until then an overview camera shows the generator behind the session menu.
+            var overview = new GameObject("OverviewCamera") { tag = "MainCamera" };
+            var overviewCam = overview.AddComponent<Camera>();
+            overviewCam.nearClipPlane = .05f; overviewCam.farClipPlane = 50;
+            overviewCam.clearFlags = CameraClearFlags.SolidColor; overviewCam.backgroundColor = new Color(.12f, .15f, .17f);
+            overview.AddComponent<AudioListener>();
+            overview.transform.position = new Vector3(1.1f, 2.0f, 4.6f);
+            overview.transform.LookAt(new Vector3(-.3f, 1, 0));
 
-            // Static preview of the other player's avatar so its look can be judged before networking exists.
-            // Remove it (or rebuild the scene) once Milestone 3 spawns real players.
-            var preview = new GameObject("AvatarPreview (Player 2, remove in Milestone 3)");
-            preview.transform.position = new Vector3(2.4f, 0, 2.3f);
-            preview.transform.rotation = Quaternion.LookRotation(new Vector3(-1.6f, 0, -1.4f));
-            var previewAvatar = preview.AddComponent<PlayerAvatar>();
-            previewAvatar.role = PlayerRole.Operator;
-            previewAvatar.playerNumber = 2;
-            previewAvatar.isLocalPlayer = false;
+            // Spawn points in front of the control panel, facing the generator: 0 = creator, 1 = joiner.
+            var spawns = new GameObject("SpawnPoints").transform;
+            var spawn1 = SpawnPoint(spawns, "Player1Spawn", new Vector3(-0.4f, 0.05f, 3.2f));
+            var spawn2 = SpawnPoint(spawns, "Player2Spawn", new Vector3(1.4f, 0.05f, 3.2f));
+
+            var session = new GameObject("Session");
+            var launcher = session.AddComponent<SessionLauncher>();
+            launcher.playerPrefab = playerPrefab.GetComponent<NetworkObject>();
+            launcher.overviewCamera = overviewCam;
+            launcher.spawnPoints = new[] { spawn1, spawn2 };
+            session.AddComponent<SessionMenu>().launcher = launcher;
 
             EditorSceneManager.SaveScene(scene, ScenePath);
+            AddToBuildSettings(ScenePath);
             AssetDatabase.SaveAssets();
             Debug.Log("[MultiplayerSceneBuilder] Saved " + ScenePath + " and " + PlayerPrefabPath +
-                      ". Press Play: WASD walk, mouse look, left-click controls, Shift faster, Esc frees the mouse.");
+                      ". Press Play, then Create session or Join with a code. In game: WASD walk, mouse look, left-click controls, Esc frees the mouse.");
+        }
+
+        static Transform SpawnPoint(Transform parent, string name, Vector3 position)
+        {
+            var t = new GameObject(name).transform;
+            t.SetParent(parent, false);
+            t.position = position;
+            t.rotation = Quaternion.Euler(0, 180, 0);
+            return t;
+        }
+
+        // Builds need the scene in File > Build Settings; Fusion also identifies scenes by their build index.
+        static void AddToBuildSettings(string path)
+        {
+            var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+            foreach (var s in scenes) if (s.path == path) { if (!s.enabled) { s.enabled = true; EditorBuildSettings.scenes = scenes.ToArray(); } return; }
+            scenes.Add(new EditorBuildSettingsScene(path, true));
+            EditorBuildSettings.scenes = scenes.ToArray();
         }
 
         static GameObject BuildPlayerPrefab()
@@ -82,15 +110,31 @@ namespace GeneratorTrainer.Editor
             var cam = head.AddComponent<Camera>();
             cam.nearClipPlane = 0.05f; cam.farClipPlane = 50f; cam.fieldOfView = 70f;
             cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(.12f, .15f, .17f);
-            head.AddComponent<AudioListener>();
+            var listener = head.AddComponent<AudioListener>();
 
             var controller = root.AddComponent<DesktopPlayerController>();
             controller.head = head.transform;
             var interactor = root.AddComponent<DesktopInteractor>();
             interactor.view = cam;
-            root.AddComponent<Crosshair>().interactor = interactor;
+            var crosshair = root.AddComponent<Crosshair>();
+            crosshair.interactor = interactor;
             var avatar = root.AddComponent<PlayerAvatar>();
             avatar.role = PlayerRole.Instructions; avatar.playerNumber = 1; avatar.isLocalPlayer = true; avatar.head = head.transform;
+
+            // Networking (Milestone 3). Everything local-only starts switched OFF; NetworkedPlayer.Spawned turns it on
+            // only on the computer that owns this player, so a remote copy never moves, renders or grabs the mouse.
+            var netObj = root.AddComponent<NetworkObject>();
+            netObj.Flags |= NetworkObjectFlags.DestroyWhenStateAuthorityLeaves;   // avatar disappears when its player leaves
+            // DesktopPlayerController moves the player in Update(). In Shared Mode, Fusion otherwise also smooths
+            // (interpolates) the owner's own transform every frame, which overwrites that movement: you could only
+            // look up/down (the head) but not walk or turn. Fusion's docs say to set this flag in exactly that case.
+            var netTransform = root.AddComponent<NetworkTransform>();
+            netTransform.ConfigFlags |= NetworkTransform.NetworkTransformFlags.DisableSharedModeInterpolation;
+            var net = root.AddComponent<NetworkedPlayer>();
+            net.controller = controller; net.interactor = interactor; net.crosshair = crosshair; net.avatar = avatar;
+            net.view = cam; net.listener = listener; net.body = body;
+            body.enabled = false; controller.enabled = false; interactor.enabled = false; crosshair.enabled = false;
+            cam.enabled = false; listener.enabled = false;
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             Object.DestroyImmediate(root);

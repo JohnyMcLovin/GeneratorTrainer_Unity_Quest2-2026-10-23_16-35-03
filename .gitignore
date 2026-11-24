@@ -112,3 +112,9 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+
+# Photon App ID: the repo is public, so the App ID is shared privately in the team
+# and pasted in Unity via Tools > Fusion > Fusion Hub (see docs/fusion-patches.md).
+/Assets/Photon/Fusion/Resources/PhotonAppSettings.asset
+/Assets/Photon/Fusion/Resources/PhotonAppSettings.asset.meta

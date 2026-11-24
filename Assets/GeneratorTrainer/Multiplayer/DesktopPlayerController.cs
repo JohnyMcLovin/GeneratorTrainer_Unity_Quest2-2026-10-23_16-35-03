@@ -16,6 +16,8 @@ namespace GeneratorTrainer.Multiplayer
         public float gravity = -9.81f;
 
         public static bool CursorLocked { get { return Cursor.lockState == CursorLockMode.Locked; } }
+        // Current up/down look angle in degrees (+ = looking down). Synced to the other player by NetworkedPlayer.
+        public float Pitch { get { return pitch; } }
         // Frame on which a click re-locked the cursor, so the interactor can ignore that click.
         public static int LockedOnFrame { get; private set; } = -1;
 
