@@ -82,7 +82,9 @@ namespace GeneratorTrainer.Editor
             var zone = Obj("DieselFillZone", root.transform, new Vector3(1.16f,.68f,.79f)); var zcol = zone.AddComponent<SphereCollider>(); zcol.isTrigger = true; zcol.radius = .24f;
             zone.AddComponent<FuelZone>().trainer = trainer; nodes["CanPivot"].gameObject.AddComponent<DieselCan>();
             trainer.engine = root.AddComponent<AudioSource>(); trainer.engine.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(Root + "/Audio/Engine.wav"); trainer.engine.playOnAwake = false; trainer.engine.loop = true; trainer.engine.spatialBlend = 1; trainer.engine.volume = .25f; trainer.engine.minDistance = 1; trainer.engine.maxDistance = 12;
-            PrefabUtility.SaveAsPrefabAsset(root, folder + "/GeneratorTrainer.prefab");
+            // Keep the scene object linked to the prefab, then apply the model fixes (door, labels, signs, handle).
+            PrefabUtility.SaveAsPrefabAssetAndConnect(root, folder + "/GeneratorTrainer.prefab", InteractionMode.AutomatedAction);
+            TrainerModelFixes.Apply(folder + "/GeneratorTrainer.prefab");
             var camera = new GameObject("DesktopCamera"); camera.tag = "MainCamera"; var cam = camera.AddComponent<Camera>(); cam.nearClipPlane = .05f; cam.farClipPlane = 50; cam.backgroundColor = new Color(.12f,.15f,.17f); cam.clearFlags = CameraClearFlags.SolidColor;
             camera.AddComponent<AudioListener>(); camera.AddComponent<TrainerOrbit>(); camera.transform.position = new Vector3(1.1f,2.0f,4.6f); camera.transform.LookAt(new Vector3(-.3f,1,0));
             var light = new GameObject("WorkshopLight").AddComponent<Light>(); light.type = LightType.Directional; light.intensity = 1.25f; light.transform.rotation = Quaternion.Euler(45,-35,0); light.shadows = LightShadows.Soft;
