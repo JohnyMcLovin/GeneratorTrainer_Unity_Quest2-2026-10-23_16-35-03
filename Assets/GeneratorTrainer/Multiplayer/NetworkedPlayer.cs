@@ -48,6 +48,10 @@ namespace GeneratorTrainer.Multiplayer
             avatar.SetLocal(local);
 
             if (local && SessionLauncher.Instance) SessionLauncher.Instance.ShowOverview(false);
+
+            // Milestone 5: the player holding the instructions gets the tablet - created only on their own computer.
+            if (local && (PlayerRole)Role == PlayerRole.Instructions && view.GetComponent<InstructionTablet>() == null)
+                view.gameObject.AddComponent<InstructionTablet>();
             ApplyIdentity();
         }
 

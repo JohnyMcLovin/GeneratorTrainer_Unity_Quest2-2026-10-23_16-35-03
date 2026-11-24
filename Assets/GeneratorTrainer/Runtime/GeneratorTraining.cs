@@ -17,6 +17,9 @@ namespace GeneratorTrainer
         // InteractFilter: returns true when the network handled the action instead (e.g. forwarded it to the
         // computer that runs the procedure), so it must not be applied locally.
         public System.Func<string, int, bool> InteractFilter;
+        // When set, the training board shows this text instead of the current step (e.g. in multiplayer only
+        // Player 1's tablet shows the procedure). null = normal behaviour.
+        [System.NonSerialized] public string boardStepText;
         readonly System.Random rng = new System.Random();
         readonly Dictionary<string, Transform> nodes = new Dictionary<string, Transform>();
         readonly Dictionary<string, Material> lamps = new Dictionary<string, Material>();
@@ -103,7 +106,7 @@ namespace GeneratorTrainer
             Lamp("BATTERYLamp", state.batteryOK); Lamp("StartReadyLamp", state.Ready);
             Lamp("KeyRing", state.keyInserted, true);
             Text("DisplayText", state.running ? "400 V   50 Hz\nNO FAULT" : state.keyInserted ? "MANUAL / STANDBY" : "PANEL OFF");
-            Text("StepText", Wrap(state.Current, 28)); Text("FeedbackText", Wrap(state.feedback, 35));
+            Text("StepText", Wrap(boardStepText ?? state.Current, 28)); Text("FeedbackText", Wrap(state.feedback, 35));
             if (engine) { if (state.running && !engine.isPlaying) engine.Play(); else if (!state.running && engine.isPlaying) engine.Stop(); }
             if (chargerCord)
             {

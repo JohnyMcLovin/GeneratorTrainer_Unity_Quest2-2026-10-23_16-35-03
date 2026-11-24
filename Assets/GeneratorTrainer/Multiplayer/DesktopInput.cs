@@ -67,6 +67,21 @@ namespace GeneratorTrainer.Multiplayer
             }
         }
 
+        public static bool TabPressed
+        {
+            get
+            {
+#if ENABLE_INPUT_SYSTEM
+                var k = UnityEngine.InputSystem.Keyboard.current;
+                return k != null && k.tabKey.wasPressedThisFrame;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+                return Input.GetKeyDown(KeyCode.Tab);
+#else
+                return false;
+#endif
+            }
+        }
+
         public static bool EscapePressed
         {
             get

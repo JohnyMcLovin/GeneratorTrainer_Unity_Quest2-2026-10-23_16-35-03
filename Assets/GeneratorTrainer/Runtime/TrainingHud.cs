@@ -23,7 +23,7 @@ namespace GeneratorTrainer
         [Tooltip("Metres below eye level (headset mode).")] public float below = 0.28f;
         [Tooltip("Higher = follows the head faster (headset mode).")] public float followSpeed = 3f;
 
-        static readonly string[] Tips =
+        public static readonly string[] Tips =
         {
             "Select the PPE button on the training board, at the control-panel end of the generator.",    // A1
             "The exhaust pipe is on top of the generator. Select it to turn it toward the outdoor vent.",  // A2
@@ -53,7 +53,7 @@ namespace GeneratorTrainer
             "Select the key in the socket to remove it.",                                                 // G3
             "Select the door handle to close the door.",                                                  // G4
         };
-        const string DoneTip = "Exercise complete. Select RESET on the training board to start again.";
+        public const string DoneTip = "Exercise complete. Select RESET on the training board to start again.";
 
         Canvas canvas;
         RectTransform root, panel;
@@ -205,13 +205,13 @@ namespace GeneratorTrainer
 
         static void Set(Text t, string value) { if (t.text != value) t.text = value; }
 
-        static string Clock(float seconds)
+        public static string Clock(float seconds)
         {
             int s = Mathf.Max(0, Mathf.FloorToInt(seconds));
             return (s / 60).ToString("00") + ":" + (s % 60).ToString("00");
         }
 
-        static string Phase(string current)
+        public static string Phase(string current)
         {
             switch (current.Length > 0 ? current[0] : ' ')
             {

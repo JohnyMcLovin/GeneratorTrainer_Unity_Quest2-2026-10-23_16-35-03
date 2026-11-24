@@ -45,9 +45,22 @@ namespace GeneratorTrainer.Multiplayer
             Application.runInBackground = true;
             Message = carriedMessage;
             carriedMessage = "";
+
+            // Milestone 5 (multiplayer scene only): the procedure is shown on Player 1's tablet instead of the old
+            // top-left window, and the training board on the generator no longer shows the current step.
+            // Its PPE / CHECK / RESET buttons and feedback messages stay for both players.
+            TrainingHud.AutoCreate = false;
+            var trainer = FindAnyObjectByType<GeneratorTraining>();
+            if (trainer) trainer.boardStepText = BoardText;
         }
 
-        void OnDestroy() { if (Instance == this) Instance = null; }
+        public const string BoardText = "Follow Player 1's instructions";
+
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            TrainingHud.AutoCreate = true;   // other scenes keep their instruction window
+        }
 
         void Update()
         {

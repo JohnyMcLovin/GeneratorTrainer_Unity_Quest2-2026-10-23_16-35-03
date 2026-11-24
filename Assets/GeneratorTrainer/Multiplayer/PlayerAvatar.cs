@@ -26,6 +26,7 @@ namespace GeneratorTrainer.Multiplayer
         Transform headPivot, nameTag;
         TextMesh tagText;
         Renderer bodyRenderer, headRenderer;
+        Transform tabletProp;
         bool built;
 
         void Awake() { Build(); }
@@ -45,6 +46,17 @@ namespace GeneratorTrainer.Multiplayer
             headRenderer = Part(PrimitiveType.Sphere, headPivot, "Head", Vector3.zero, Vector3.one * 0.28f);
             var visor = Part(PrimitiveType.Cube, headPivot, "Visor", new Vector3(0, 0.02f, 0.12f), new Vector3(0.22f, 0.08f, 0.06f));
             visor.material.color = new Color(0.05f, 0.06f, 0.08f);
+
+            // Small tablet held in front of the chest (no readable text), shown only for the Instructions role, so
+            // the other player sees at a glance who holds the instructions. Tilted with its screen toward the holder.
+            tabletProp = new GameObject("TabletProp").transform;
+            tabletProp.SetParent(visuals, false);
+            tabletProp.localPosition = new Vector3(0.14f, 1.12f, 0.34f);
+            tabletProp.localRotation = Quaternion.Euler(-35f, 0f, 0f);
+            var case_ = Part(PrimitiveType.Cube, tabletProp, "TabletCase", Vector3.zero, new Vector3(0.24f, 0.016f, 0.17f));
+            case_.material.color = new Color(0.07f, 0.075f, 0.085f);
+            var screen = Part(PrimitiveType.Cube, tabletProp, "TabletScreen", new Vector3(0, 0.009f, 0.006f), new Vector3(0.21f, 0.004f, 0.135f));
+            screen.material.color = new Color(0.12f, 0.35f, 0.5f);
 
             nameTag = new GameObject("NameTag").transform;
             nameTag.SetParent(visuals, false);
@@ -100,6 +112,7 @@ namespace GeneratorTrainer.Multiplayer
             headRenderer.material.color = Color.Lerp(c, Color.white, 0.35f);
             tagText.color = Color.Lerp(c, Color.white, 0.5f);
             tagText.text = "Player " + playerNumber + " - " + (role == PlayerRole.Instructions ? "Instructions" : "Operator");
+            tabletProp.gameObject.SetActive(role == PlayerRole.Instructions);
         }
 
         void ApplyVisibility()
