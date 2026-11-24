@@ -2,11 +2,16 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace GeneratorTrainer
 {
+    public enum FaultChoice { Random, MCB, Fuel, Battery }
+
     public sealed class GeneratorTraining : MonoBehaviour
     {
         public TrainingState state = new TrainingState();
         public AudioSource engine;
         public bool desktopControls = true;
+        [Tooltip("Fault for each run. Random picks MCB, fuel or battery (and which breaker trips) on every start and RESET.")]
+        public FaultChoice faultChoice = FaultChoice.Random;
+        readonly System.Random rng = new System.Random();
         readonly Dictionary<string, Transform> nodes = new Dictionary<string, Transform>();
         readonly Dictionary<string, Material> lamps = new Dictionary<string, Material>();
         readonly Dictionary<string, Vector3> rest = new Dictionary<string, Vector3>();
@@ -17,9 +22,16 @@ namespace GeneratorTrainer
             return state.Current.Split(' ')[0];
         }
         Transform Node(string name) { Transform v; return nodes.TryGetValue(name, out v) ? v : null; }
+        TrainingState NewRun()
+        {
+            if (faultChoice == FaultChoice.Random) return TrainingState.NewRandomRun(rng);
+            var fault = faultChoice == FaultChoice.MCB ? Fault.MCB : faultChoice == FaultChoice.Fuel ? Fault.Fuel : Fault.Battery;
+            return TrainingState.NewRun(fault, rng.Next(4));
+        }
         void Awake()
         {
-            log = new RunLogger(); 
+            state = NewRun();
+            log = new RunLogger(state.fault.ToString());
             foreach (Transform t in GetComponentsInChildren<Transform>(true))
             { nodes[t.name] = t; rest[t.name] = t.localPosition; }
             foreach (string n in new[] { "MCBLamp", "FUELLamp", "BATTERYLamp", "StartReadyLamp", "KeyRing" })
@@ -36,31 +48,26 @@ namespace GeneratorTrainer
             string before = StepId();
             if (action == "Reset") 
             {
-                log.Row(before, action, "reset", "A1", "Run restarted");
-                state = new TrainingState();
-                log = new RunLogger(); 
-                return; 
+                log.Row(before, action, "reset", "A1", "Run restarted", state);
+                state = NewRun();
+                log = new RunLogger(state.fault.ToString());
+                return;
             }
-            int oldStep = state.step;
-            bool wasRunning = state.running, wasComplete = state.Complete;
-            state.Act(action, index);
-            string result = "wrong";
-
-            if (wasComplete) result = "after_end";
-            else if (state.step > oldStep) result = "correct";
-            else if (action == "Estop" && oldStep > 2) result = "emergency";
-            else if (action == "Stop" && wasRunning && !state.running) result = "emergency";
-            else if (action == "Fuel" && state.pouring) result = "started";
-
+            bool wasComplete = state.Complete;
+            string result = state.Act(action, index);
             string name = action == "Breaker" ? "Breaker" + (index + 1) : action;
-            log.Row(before, name, result, StepId(), state.feedback);
+            log.Row(before, name, result, StepId(), state.feedback, state);
+            if (!wasComplete && state.Complete)
+                log.Row(StepId(), "Finish", "complete", StepId(), string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "Time {0:F1} s, wrong actions {1}, penalty {2:F0} s, total {3:F1} s",
+                    state.elapsed, state.wrongCount, state.penaltySeconds, state.TotalTime), state);
         }
         void Update()
         {
             string beforeTick = StepId();
             int tickStep = state.step;
             state.Tick(Time.deltaTime);
-            if (state.step > tickStep) log.Row(beforeTick, "Timer", "auto", StepId(), state.feedback);
+            if (state.step > tickStep) log.Row(beforeTick, "Timer", "auto", StepId(), state.feedback, state);
             Rotate("DoorPivot", new Vector3(0, state.doorOpen ? -115 : 0, 0));
             Rotate("CoverPivot", new Vector3(state.coverOpen ? -125 : 0, 0, 0));
             Rotate("ExhaustPivot", new Vector3(0, state.exhaustSafe ? 180 : 0, 0));
