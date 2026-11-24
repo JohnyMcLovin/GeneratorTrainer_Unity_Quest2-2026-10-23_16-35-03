@@ -33,15 +33,30 @@ namespace GeneratorTrainer.Multiplayer
             bool canClick = locked && Time.frameCount != DesktopPlayerController.LockedOnFrame;
             if (canClick && DesktopInput.ClickDown && Hovered != null)
             {
-                Pressed = Hovered;
-                Pressed.Press();
+                // In a session the press goes through the network bridge, which checks the component lock and
+                // forwards the action to the computer that runs the procedure. Offline it is a plain Press().
+                var sync = GeneratorNetSync.Instance;
+                bool accepted = sync != null ? sync.Press(Hovered) : PressLocal(Hovered);
+                if (accepted) Pressed = Hovered;
             }
             if (Pressed != null && (!DesktopInput.ClickHeld || Hovered != Pressed)) ReleasePressed();
         }
 
+        // Player number (1 or 2) of the other player if they are operating the hovered control, otherwise 0.
+        public int HoveredLockedBy
+        {
+            get { var sync = GeneratorNetSync.Instance; return sync != null && Hovered != null ? sync.LockedByOther(Hovered) : 0; }
+        }
+
+        static bool PressLocal(TrainerControl control) { control.Press(); return true; }
+
         void ReleasePressed()
         {
-            if (Pressed != null) Pressed.Release();
+            if (Pressed != null)
+            {
+                var sync = GeneratorNetSync.Instance;
+                if (sync != null) sync.Release(Pressed); else Pressed.Release();
+            }
             Pressed = null;
         }
 

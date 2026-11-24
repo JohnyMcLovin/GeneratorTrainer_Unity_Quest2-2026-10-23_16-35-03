@@ -37,6 +37,9 @@ namespace GeneratorTrainer.Editor
 
             GameObject playerPrefab = BuildPlayerPrefab();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            // Save the empty scene first so it has a file identity (GUID). Fusion "bakes" scene NetworkObjects on
+            // save and derives their IDs from that identity; a never-saved scene gives ID 0 -> "hash != 0" error.
+            EditorSceneManager.SaveScene(scene, ScenePath);
 
             // Generator: prefab instance; the crosshair interactor replaces its built-in mouse click in this scene.
             var gen = (GameObject)PrefabUtility.InstantiatePrefab(generatorPrefab, scene);
@@ -44,6 +47,13 @@ namespace GeneratorTrainer.Editor
             var trainer = gen.GetComponent<GeneratorTraining>();
             trainer.desktopControls = false;
             PrefabUtility.RecordPrefabInstancePropertyModifications(trainer);
+
+            // Milestone 4: the generator becomes one shared network object (in this scene only; the prefab and the
+            // other scenes are untouched). The master client (session creator) runs the procedure; if it leaves,
+            // Fusion hands the generator to the remaining player.
+            var genNetObj = gen.AddComponent<NetworkObject>();
+            genNetObj.Flags |= NetworkObjectFlags.MasterClientObject;
+            gen.AddComponent<GeneratorNetSync>();
 
             BuildEnvironment();
 
@@ -69,6 +79,9 @@ namespace GeneratorTrainer.Editor
             launcher.spawnPoints = new[] { spawn1, spawn2 };
             session.AddComponent<SessionMenu>().launcher = launcher;
 
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            // Save once more so the bake also sees the objects' final file IDs.
+            EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
             AddToBuildSettings(ScenePath);
             AssetDatabase.SaveAssets();

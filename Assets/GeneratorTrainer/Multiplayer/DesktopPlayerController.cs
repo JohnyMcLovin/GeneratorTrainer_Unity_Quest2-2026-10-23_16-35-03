@@ -42,7 +42,9 @@ namespace GeneratorTrainer.Multiplayer
         void Update()
         {
             if (DesktopInput.EscapePressed) SetCursorLocked(false);
-            else if (!CursorLocked && DesktopInput.ClickDown) { SetCursorLocked(true); LockedOnFrame = Time.frameCount; }
+            // A click re-captures the mouse - except on an on-screen button (e.g. Leave session), which must get the click.
+            else if (!CursorLocked && DesktopInput.ClickDown && !SessionMenu.IsOverButton(DesktopInput.PointerGuiPosition()))
+            { SetCursorLocked(true); LockedOnFrame = Time.frameCount; }
 
             if (CursorLocked)
             {

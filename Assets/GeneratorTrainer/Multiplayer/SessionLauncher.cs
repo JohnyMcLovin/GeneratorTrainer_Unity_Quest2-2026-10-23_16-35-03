@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Fusion;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace GeneratorTrainer.Multiplayer
 {
@@ -12,7 +13,9 @@ namespace GeneratorTrainer.Multiplayer
     // Join:   enters the session with the typed code. Shared Mode would silently CREATE a session for an unknown
     //         code, so we check who created the room: the creator becomes the room's "master client". If joining
     //         made us the master client, no session with that code existed -> leave and report it.
-    // After connecting, each computer spawns its OWN player (Shared Mode: every client owns its player object).
+    // Fusion "takes over" the already-open scene (no reload), so the generator's NetworkObject in the scene becomes
+    // the shared generator. After connecting, each computer spawns its OWN player (Shared Mode).
+    // Leaving or losing the connection reloads the scene, so the menu, the generator and the procedure start clean.
     public sealed class SessionLauncher : MonoBehaviour
     {
         public const int MaxPlayers = 2;
@@ -21,6 +24,7 @@ namespace GeneratorTrainer.Multiplayer
         const int CodeLength = 6;
 
         public static SessionLauncher Instance { get; private set; }
+        static string carriedMessage = "";   // survives the scene reload after leaving / failing
 
         [Tooltip("The DesktopPlayer prefab (has a NetworkObject).")] public NetworkObject playerPrefab;
         [Tooltip("Camera that shows the generator behind the menu until your player spawns.")] public Camera overviewCamera;
@@ -32,12 +36,15 @@ namespace GeneratorTrainer.Multiplayer
         public int PlayerCount { get { return runner != null && runner.IsRunning ? runner.ActivePlayers.Count() : 0; } }
 
         NetworkRunner runner;
+        bool restarting;
 
         void Awake()
         {
             Instance = this;
             // Keep simulating while the window is not focused (two game windows on one PC).
             Application.runInBackground = true;
+            Message = carriedMessage;
+            carriedMessage = "";
         }
 
         void OnDestroy() { if (Instance == this) Instance = null; }
@@ -45,25 +52,19 @@ namespace GeneratorTrainer.Multiplayer
         void Update()
         {
             // Connection lost or Photon shut the runner down.
-            if (State == SessionState.InSession && (runner == null || !runner.IsRunning))
-            {
-                Cleanup();
-                Message = "Disconnected from the session.";
-            }
+            if (State == SessionState.InSession && !restarting && (runner == null || !runner.IsRunning))
+                Restart("Disconnected from the session.");
         }
 
         public async void CreateSession()
         {
             if (State != SessionState.Idle) return;
-            for (int attempt = 0; attempt < 3; attempt++)
-            {
-                string code = NewCode();
-                var result = await StartRunner(code, "Creating session...");
-                if (!result.Ok) { await Fail("Could not create the session: " + Describe(result)); return; }
-                if (runner.IsSharedModeMasterClient) { EnterSession(code); return; }
-                await StopRunner();   // extremely unlikely: that code is already in use, try another
-            }
-            await Fail("Could not create a session. Please try again.");
+            string code = NewCode();
+            var result = await StartRunner(code, "Creating session...");
+            if (!result.Ok) { await StopAndRestart("Could not create the session: " + Describe(result)); return; }
+            // Extremely unlikely: that code is already in use by another session.
+            if (!runner.IsSharedModeMasterClient) { await StopAndRestart("Could not create a session. Please try again."); return; }
+            EnterSession(code);
         }
 
         public async void JoinSession(string typedCode)
@@ -74,20 +75,19 @@ namespace GeneratorTrainer.Multiplayer
             var result = await StartRunner(code, "Joining session " + code + "...");
             if (!result.Ok)
             {
-                await Fail(result.ShutdownReason == ShutdownReason.GameIsFull
+                await StopAndRestart(result.ShutdownReason == ShutdownReason.GameIsFull
                     ? "Session " + code + " already has " + MaxPlayers + " players."
                     : "Could not join: " + Describe(result));
                 return;
             }
-            if (runner.IsSharedModeMasterClient) { await Fail("No session with code " + code + ". Check the code and try again."); return; }
+            if (runner.IsSharedModeMasterClient) { await StopAndRestart("No session with code " + code + ". Check the code and try again."); return; }
             EnterSession(code);
         }
 
         public async void LeaveSession()
         {
             if (State != SessionState.InSession) return;
-            await StopRunner();
-            Message = "You left the session.";
+            await StopAndRestart("You left the session.");
         }
 
         // Called by the local NetworkedPlayer when it has spawned (its own camera takes over).
@@ -105,12 +105,19 @@ namespace GeneratorTrainer.Multiplayer
             runner = go.AddComponent<NetworkRunner>();
             runner.ProvideInput = false;   // Shared Mode: each client moves its own player directly
             var provider = go.AddComponent<NetworkObjectProviderDefault>();
+            var sceneManager = go.AddComponent<NetworkSceneManagerDefault>();   // takes over the open scene
+            // Same as Fusion's own FusionBootstrap: the already-loaded scene is registered (Additive + take-over),
+            // so it is not reloaded and its NetworkObjects (the generator) join the session.
+            var sceneInfo = new NetworkSceneInfo();
+            sceneInfo.AddSceneRef(SceneRef.FromIndex(SceneManager.GetActiveScene().buildIndex), LoadSceneMode.Additive);
             return await runner.StartGame(new StartGameArgs
             {
                 GameMode = GameMode.Shared,
                 SessionName = code,
                 PlayerCount = MaxPlayers,
                 ObjectProvider = provider,
+                SceneManager = sceneManager,
+                Scene = sceneInfo,
             });
         }
 
@@ -126,14 +133,10 @@ namespace GeneratorTrainer.Multiplayer
             runner.Spawn(playerPrefab, position, rotation, runner.LocalPlayer);
         }
 
-        async Task Fail(string message)
+        async Task StopAndRestart(string message)
         {
-            await StopRunner();
-            Message = message;
-        }
-
-        async Task StopRunner()
-        {
+            if (restarting) return;
+            restarting = true;
             var r = runner;
             runner = null;
             if (r != null)
@@ -141,15 +144,16 @@ namespace GeneratorTrainer.Multiplayer
                 if (r.IsRunning) await r.Shutdown();
                 if (r) Destroy(r.gameObject);
             }
-            Cleanup();
+            Restart(message);
         }
 
-        void Cleanup()
+        // Reload the scene: fresh menu, fresh generator and procedure, no leftovers from the network session.
+        void Restart(string message)
         {
+            restarting = true;
+            carriedMessage = message;
             if (runner != null) { Destroy(runner.gameObject); runner = null; }
-            State = SessionState.Idle;
-            Code = "";
-            ShowOverview(true);
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
         static string Describe(StartGameResult result)

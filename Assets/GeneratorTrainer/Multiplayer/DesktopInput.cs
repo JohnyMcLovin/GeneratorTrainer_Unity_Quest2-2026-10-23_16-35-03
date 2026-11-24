@@ -39,6 +39,19 @@ namespace GeneratorTrainer.Multiplayer
 #endif
         }
 
+        // Mouse position in GUI coordinates (pixels, origin top-left), for checking clicks on on-screen buttons.
+        public static Vector2 PointerGuiPosition()
+        {
+            Vector2 p = Vector2.zero;
+#if ENABLE_INPUT_SYSTEM
+            var m = UnityEngine.InputSystem.Mouse.current;
+            if (m != null) p = m.position.ReadValue();
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            p = Input.mousePosition;
+#endif
+            return new Vector2(p.x, Screen.height - p.y);
+        }
+
         public static bool Fast
         {
             get

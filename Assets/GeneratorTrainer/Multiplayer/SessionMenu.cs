@@ -22,6 +22,7 @@ namespace GeneratorTrainer.Multiplayer
             float w = Screen.width / scale, h = Screen.height / scale;
 
             if (launcher.State == SessionState.InSession) { SessionBar(w); return; }
+            leaveButtonScreen = Rect.zero;
 
             var panel = new Rect(w / 2 - 260, h / 2 - 190, 520, 380);
             GUI.Box(panel, GUIContent.none);
@@ -58,9 +59,23 @@ namespace GeneratorTrainer.Multiplayer
             string status = "Session code: " + launcher.Code + "     Players " + players + "/" + SessionLauncher.MaxPlayers +
                             (players < SessionLauncher.MaxPlayers ? "     waiting for Player 2..." : "");
             GUI.Label(new Rect(w / 2 - 400, 12, 800, 40), status, bar);
-            if (!DesktopPlayerController.CursorLocked &&
-                GUI.Button(new Rect(w / 2 - 110, 60, 220, 44), "Leave session", button))
-                launcher.LeaveSession();
+            if (!DesktopPlayerController.CursorLocked)
+            {
+                var leave = new Rect(w / 2 - 110, 60, 220, 44);
+                float s = Screen.height / 1080f;
+                leaveButtonScreen = new Rect(leave.x * s, leave.y * s, leave.width * s, leave.height * s);
+                if (GUI.Button(leave, "Leave session", button)) launcher.LeaveSession();
+            }
+            else leaveButtonScreen = Rect.zero;
+        }
+
+        // Screen area of the Leave button while it is shown (GUI pixels, origin top-left).
+        static Rect leaveButtonScreen;
+
+        // True if a click at this position is meant for an on-screen button, so it must not re-capture the mouse.
+        public static bool IsOverButton(Vector2 guiPosition)
+        {
+            return leaveButtonScreen.width > 0 && leaveButtonScreen.Contains(guiPosition);
         }
 
         void Styles()

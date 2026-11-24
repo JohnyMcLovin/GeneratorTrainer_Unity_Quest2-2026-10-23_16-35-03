@@ -11,6 +11,12 @@ namespace GeneratorTrainer
         public bool desktopControls = true;
         [Tooltip("Fault for each run. Random picks MCB, fuel or battery (and which breaker trips) on every start and RESET.")]
         public FaultChoice faultChoice = FaultChoice.Random;
+        // Multiplayer hooks (set by GeneratorNetSync; both are inactive in single-player scenes).
+        // simulate: false on a computer that only mirrors another computer's state - no timers, no CSV rows.
+        [System.NonSerialized] public bool simulate = true;
+        // InteractFilter: returns true when the network handled the action instead (e.g. forwarded it to the
+        // computer that runs the procedure), so it must not be applied locally.
+        public System.Func<string, int, bool> InteractFilter;
         readonly System.Random rng = new System.Random();
         readonly Dictionary<string, Transform> nodes = new Dictionary<string, Transform>();
         readonly Dictionary<string, Material> lamps = new Dictionary<string, Material>();
@@ -45,6 +51,7 @@ namespace GeneratorTrainer
         }
         public void Interact(string action, int index)
         {
+            if (InteractFilter != null && InteractFilter(action, index)) return;
             string before = StepId();
             if (action == "Reset") 
             {
@@ -64,10 +71,13 @@ namespace GeneratorTrainer
         }
         void Update()
         {
-            string beforeTick = StepId();
-            int tickStep = state.step;
-            state.Tick(Time.deltaTime);
-            if (state.step > tickStep) log.Row(beforeTick, "Timer", "auto", StepId(), state.feedback, state);
+            if (simulate)
+            {
+                string beforeTick = StepId();
+                int tickStep = state.step;
+                state.Tick(Time.deltaTime);
+                if (state.step > tickStep) log.Row(beforeTick, "Timer", "auto", StepId(), state.feedback, state);
+            }
             Rotate("DoorPivot", new Vector3(0, state.doorOpen ? -115 : 0, 0));
             Rotate("CoverPivot", new Vector3(state.coverOpen ? -125 : 0, 0, 0));
             Rotate("ExhaustPivot", new Vector3(0, state.exhaustSafe ? 180 : 0, 0));

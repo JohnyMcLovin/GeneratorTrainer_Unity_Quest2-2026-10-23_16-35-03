@@ -33,6 +33,7 @@ namespace GeneratorTrainer.Multiplayer
             if (local)
             {
                 Local = this;
+                Runner.SetPlayerObject(Runner.LocalPlayer, Object);
                 Number = Runner.IsSharedModeMasterClient ? 1 : 2;
                 Role = (int)(Number == 1 ? PlayerRole.Instructions : PlayerRole.Operator);
             }

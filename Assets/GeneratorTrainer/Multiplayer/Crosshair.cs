@@ -9,6 +9,8 @@ namespace GeneratorTrainer.Multiplayer
         public DesktopInteractor interactor;
         public Color idle = new Color(1f, 1f, 1f, 0.75f);
         public Color active = new Color(1f, 0.84f, 0.2f, 1f);
+        [Tooltip("Colour when the other player is operating the control (component lock).")]
+        public Color busy = new Color(1f, 0.25f, 0.2f, 1f);
 
         GUIStyle label, hint;
 
@@ -33,15 +35,21 @@ namespace GeneratorTrainer.Multiplayer
             }
 
             TrainerControl hovered = interactor != null ? interactor.Hovered : null;
+            int lockedBy = interactor != null ? interactor.HoveredLockedBy : 0;
+            Color colour = hovered ? (lockedBy != 0 ? busy : active) : idle;
             float size = Mathf.Max(4f, (hovered ? 10f : 6f) * scale);
             Color old = GUI.color;
             GUI.color = new Color(0, 0, 0, 0.6f);
             GUI.DrawTexture(new Rect(c.x - size / 2 - 1, c.y - size / 2 - 1, size + 2, size + 2), Texture2D.whiteTexture);
-            GUI.color = hovered ? active : idle;
+            GUI.color = colour;
             GUI.DrawTexture(new Rect(c.x - size / 2, c.y - size / 2, size, size), Texture2D.whiteTexture);
             GUI.color = old;
 
-            if (hovered) Shadowed(new Rect(c.x - 300, c.y + 14 * scale, 600, 40 * scale), ControlLabels.For(hovered), label, active);
+            if (hovered)
+            {
+                string text = ControlLabels.For(hovered) + (lockedBy != 0 ? "  -  In use by Player " + lockedBy : "");
+                Shadowed(new Rect(c.x - 300, c.y + 14 * scale, 600, 40 * scale), text, label, colour);
+            }
         }
 
         static void Shadowed(Rect r, string text, GUIStyle style, Color color)
