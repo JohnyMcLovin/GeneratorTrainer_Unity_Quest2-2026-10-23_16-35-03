@@ -7,7 +7,9 @@ Course project: a two-player collaborative VR training task. A diesel generator 
 
 They have to talk to finish the task. Each run has one of three faults: tripped **MCB** breaker, empty **fuel** tank, or flat **battery**. Wrong actions are soft fails: they are logged and cost time, but never end the run.
 
-> Status (30 Oct 2026): early. The generator model and a single-player desktop prototype exist. Quest setup, networking, fault selection, logging and the Expert screen are not built yet. See [`docs/PLAN.md`](docs/PLAN.md).
+> Status (24 Nov 2026): one PC works end to end. One random fault per run, wrong actions as soft fails (penalty + short lockout), run timer, CSV log, Technician task panel, and an Expert screen where the Expert chooses the fault code from what the Technician reports. Quest build (OpenXR) and XR controller binding exist but are not yet tested on a headset. Networking between two machines and voice are not built. See [`docs/PLAN.md`](docs/PLAN.md).
+>
+> **Which scene to open:** `Assets/Scenes/DesktopDemo.unity` (desktop, mouse) or `Assets/Scenes/KeyboardTest.unity` (XR rig, used by the Quest build). Do not demo `Assets/GeneratorTrainer/Generated/GeneratorTraining.unity`: it holds the older OBJ model, whose `ExhaustPipe.cs` and `PanelDoor.cs` move parts without any step checks, penalties or logging.
 
 ## Requirements
 

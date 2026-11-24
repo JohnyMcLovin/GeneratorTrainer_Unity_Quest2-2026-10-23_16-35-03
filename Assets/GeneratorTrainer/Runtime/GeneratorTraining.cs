@@ -4,11 +4,18 @@ namespace GeneratorTrainer
 {
     public enum FaultChoice { Random, MCB, Fuel, Battery }
 
+    // Solo: one trainee sees the procedure (board, task panel, tips).
+    // Collaborative: the Technician sees no procedure and gets only results; the Expert screen shows the
+    // fault code and the manual. Press F1 while playing to switch.
+    public enum TrainerMode { Solo, Collaborative }
+
     public sealed class GeneratorTraining : MonoBehaviour
     {
         public TrainingState state = new TrainingState();
         public AudioSource engine;
         public bool desktopControls = true;
+        public TrainerMode mode = TrainerMode.Solo;
+        public bool Collaborative { get { return mode == TrainerMode.Collaborative; } }
         [Tooltip("Fault for each run. Random picks MCB, fuel or battery (and which breaker trips) on every start and RESET.")]
         public FaultChoice faultChoice = FaultChoice.Random;
         readonly System.Random rng = new System.Random();
@@ -62,6 +69,16 @@ namespace GeneratorTrainer
                     "Time {0:F1} s, wrong actions {1}, penalty {2:F0} s, total {3:F1} s",
                     state.elapsed, state.wrongCount, state.penaltySeconds, state.TotalTime), state);
         }
+        // The Expert picks a fault code (0 MCB, 1 fuel, 2 battery, -1 none) from what the Technician reports.
+        // Logged with whether it matches the real fault; the Expert is not told.
+        public void ExpertDiagnose(int diagnosis)
+        {
+            if (state.expertDiagnosis == diagnosis) return;
+            state.expertDiagnosis = diagnosis;
+            string label = diagnosis < 0 ? "none" : TrainingState.CodeOf((Fault)diagnosis);
+            string result = diagnosis < 0 ? "cleared" : state.DiagnosisCorrect ? "matches" : "differs";
+            log.Row(StepId(), "ExpertCode " + label, result, StepId(), "Expert set the fault code to " + label, state);
+        }
         void Update()
         {
             string beforeTick = StepId();
@@ -93,7 +110,8 @@ namespace GeneratorTrainer
             Lamp("BATTERYLamp", state.batteryOK); Lamp("StartReadyLamp", state.Ready);
             Lamp("KeyRing", state.keyInserted, true);
             Text("DisplayText", state.running ? "400 V   50 Hz\nNO FAULT" : state.keyInserted ? "MANUAL / STANDBY" : "PANEL OFF");
-            Text("StepText", Wrap(state.Current, 28)); Text("FeedbackText", Wrap(state.feedback, 35));
+            if (Collaborative) { Text("StepText", "ASK THE EXPERT"); Text("FeedbackText", Wrap(state.TechnicianFeedback, 35)); }
+            else { Text("StepText", Wrap(state.Current, 28)); Text("FeedbackText", Wrap(state.feedback, 35)); }
             if (engine) { if (state.running && !engine.isPlaying) engine.Play(); else if (!state.running && engine.isPlaying) engine.Stop(); }
             if (chargerCord)
             {
@@ -127,7 +145,7 @@ namespace GeneratorTrainer
 #elif ENABLE_LEGACY_INPUT_MANAGER
             click = Input.GetMouseButtonDown(0); pos = Input.mousePosition;
 #endif
-            if (!click || Camera.main == null) return;
+            if (!click || Camera.main == null || ExpertScreen.CoversMainScreen) return;
             // Ignore fuel trigger volumes; solid cabinet colliders occlude hidden controls.
             RaycastHit hit;
             if (Physics.Raycast(Camera.main.ScreenPointToRay(pos), out hit, 15, ~0, QueryTriggerInteraction.Ignore))
