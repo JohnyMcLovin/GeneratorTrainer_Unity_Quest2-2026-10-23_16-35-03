@@ -189,23 +189,28 @@ namespace GeneratorTrainer
         void Refresh()
         {
             var s = trainer.state;
-            string h = s.Complete ? "ALL STEPS DONE" : "STEP " + s.Position + " / " + s.RequiredCount + "   |   " + Phase(s.Current);
+            bool collab = trainer.Collaborative;
+            string h = s.Complete ? "ALL STEPS DONE"
+                : collab ? "TECHNICIAN   |   the Expert has the manual"
+                : "STEP " + s.Position + " / " + s.RequiredCount + "   |   " + Phase(s.Current);
             Set(header, h);
             string penalty = s.wrongCount == 0 ? "no wrong actions"
                 : s.wrongCount + " wrong (+" + s.penaltySeconds.ToString("0") + " s)";
             Set(timer, s.Complete
                 ? "Finished: " + Clock(s.elapsed) + " + " + s.penaltySeconds.ToString("0") + " s penalty = " + Clock(s.TotalTime)
                 : "Time " + Clock(s.elapsed) + "   |   " + penalty + "   |   Total " + Clock(s.TotalTime));
-            Set(task, s.Current);
-            Set(feedback, s.feedback);
-            string t = s.Complete ? DoneTip : (s.step < Tips.Length ? Tips[s.step] : "");
+            // Collaborative: the Technician must get the procedure from the Expert, so no task, hints or tips.
+            Set(task, collab ? (s.Complete ? "Done" : "Ask the Expert what to do") : s.Current);
+            Set(feedback, collab ? s.TechnicianFeedback : s.feedback);
+            string t = collab ? "" : s.Complete ? DoneTip : (s.step < Tips.Length ? Tips[s.step] : "");
             Set(tip, showTips && t.Length > 0 ? "Tip: " + t : "");
             tip.gameObject.SetActive(showTips && t.Length > 0);
+            Set(footer, worldSpace ? "Y: hide panel" : "F1: Solo / Collaborative   |   Tab: Expert screen   |   H: hide panel");
         }
 
         static void Set(Text t, string value) { if (t.text != value) t.text = value; }
 
-        static string Clock(float seconds)
+        public static string Clock(float seconds)
         {
             int s = Mathf.Max(0, Mathf.FloorToInt(seconds));
             return (s / 60).ToString("00") + ":" + (s % 60).ToString("00");
