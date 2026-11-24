@@ -25,24 +25,24 @@ namespace GeneratorTrainer
 
         static readonly string[] Tips =
         {
-            "Select the PPE button on the training board to the left of the generator.",                  // A1
+            "Select the PPE button on the training board, at the control-panel end of the generator.",    // A1
             "The exhaust pipe is on top of the generator. Select it to turn it toward the outdoor vent.",  // A2
-            "The red E-STOP is on the front, to the right of the control panel. Select it to release it.", // A3
+            "The red E-STOP is on the front, next to the control-panel door. Select it to release it.",    // A3
             "Select the door handle to open the control-panel door.",                                    // A4
             "The instruction plate is on the inside of the open door. Select it after reading.",          // A5
             "Look at the MCB, FUEL and BATTERY lamps on the panel, then select CHECK on the board.",      // A6
-            "Select the key on the low shelf next to the panel, or the INSERT KEY socket.",               // B1
+            "Select the key next to the control-panel door, or the INSERT KEY socket.",                   // B1
             "Select the round MAN / OFF / AUTO knob to turn it to MAN.",                                  // B2
             "Select the red STOP button on the panel to pull it out.",                                    // B3
             "Select the MCB COVER below the START and STOP buttons to lift it.",                          // C1
             "Look at the four breakers: the tripped one points down. Then select CHECK.",                 // C2
             "Select the breaker that points down to flip it ON. The others are already ON.",              // C3
             "Select the cover again to close it. The MCB lamp turns green.",                              // C4
-            "Go to the fuel filler at the right end (DIESEL ONLY / NO SMOKING sign), then select CHECK.",  // D1
+            "Go to the fuel filler at the far end from the panel (DIESEL ONLY sign), then select CHECK.",  // D1
             "Select the filler cap to remove it.",                                                        // D2
             "Select the DIESEL can next to the filler. Filling takes about 5 seconds.",                   // D3
             "Select the cap again to put it back. The FUEL lamp turns green.",                            // D4
-            "Select the charger plug on the low shelf, or the BAT. CHARGE socket on the panel.",          // E1
+            "Select the charger plug (orange 12V CHARGE box on the low shelf) or the BAT. CHARGE socket.", // E1
             "Nothing to press: charging takes about 8 seconds. Watch the BATTERY lamp.",                  // E2
             "Select the plug or the socket again to disconnect the charger.",                             // E3
             "All three lamps and the small lamp next to START must be green. Then select CHECK.",         // F1
@@ -57,7 +57,7 @@ namespace GeneratorTrainer
 
         Canvas canvas;
         RectTransform root, panel;
-        Text header, task, feedback, tip, footer;
+        Text header, timer, task, feedback, tip, footer;
         Camera cam;
         bool worldSpace, visible = true, yWasDown, snap = true;
         static bool subscribed;
@@ -116,6 +116,7 @@ namespace GeneratorTrainer
             panel.sizeDelta = new Vector2(560, 0);
 
             header = Line(font, mat, 20, FontStyle.Bold, new Color(0.62f, 0.69f, 0.76f));
+            timer = Line(font, mat, 22, FontStyle.Bold, new Color(0.85f, 0.9f, 0.95f));
             task = Line(font, mat, 32, FontStyle.Bold, Color.white);
             feedback = Line(font, mat, 22, FontStyle.Normal, new Color(0.62f, 0.86f, 1f));
             tip = Line(font, mat, 22, FontStyle.Normal, new Color(1f, 0.84f, 0.4f));
@@ -188,9 +189,13 @@ namespace GeneratorTrainer
         void Refresh()
         {
             var s = trainer.state;
-            int total = TrainingState.Instructions.Length;
-            string h = s.Complete ? "ALL STEPS DONE" : "STEP " + (s.step + 1) + " / " + total + "   |   " + Phase(s.Current);
+            string h = s.Complete ? "ALL STEPS DONE" : "STEP " + s.Position + " / " + s.RequiredCount + "   |   " + Phase(s.Current);
             Set(header, h);
+            string penalty = s.wrongCount == 0 ? "no wrong actions"
+                : s.wrongCount + " wrong (+" + s.penaltySeconds.ToString("0") + " s)";
+            Set(timer, s.Complete
+                ? "Finished: " + Clock(s.elapsed) + " + " + s.penaltySeconds.ToString("0") + " s penalty = " + Clock(s.TotalTime)
+                : "Time " + Clock(s.elapsed) + "   |   " + penalty + "   |   Total " + Clock(s.TotalTime));
             Set(task, s.Current);
             Set(feedback, s.feedback);
             string t = s.Complete ? DoneTip : (s.step < Tips.Length ? Tips[s.step] : "");
@@ -199,6 +204,12 @@ namespace GeneratorTrainer
         }
 
         static void Set(Text t, string value) { if (t.text != value) t.text = value; }
+
+        static string Clock(float seconds)
+        {
+            int s = Mathf.Max(0, Mathf.FloorToInt(seconds));
+            return (s / 60).ToString("00") + ":" + (s % 60).ToString("00");
+        }
 
         static string Phase(string current)
         {

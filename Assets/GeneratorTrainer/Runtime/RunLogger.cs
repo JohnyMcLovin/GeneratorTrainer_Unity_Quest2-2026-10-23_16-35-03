@@ -5,25 +5,26 @@ using UnityEngine;
 
 namespace GeneratorTrainer
 {
+    // One CSV file per run in Application.persistentDataPath.
     public sealed class RunLogger
     {
-        readonly string path, session;
-        readonly float start;
+        readonly string path, session, fault;
 
-        public RunLogger()
+        public RunLogger(string fault)
         {
+            this.fault = fault;
             session = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
-            start = Time.time;
             path = Path.Combine(Application.persistentDataPath, "run_" + session + ".csv");
-            File.WriteAllText(path, "session_id,time_s,step_before,action,result,step_after,message\n");
+            File.WriteAllText(path, "session_id,fault,time_s,step_before,action,result,step_after,wrong_count,penalty_s,total_s,message\n");
             Debug.Log("[RunLogger] " + path);
         }
 
-        public void Row(string before, string action, string result, string after, string message)
+        public void Row(string before, string action, string result, string after, string message, TrainingState s)
         {
-            string t = (Time.time - start).ToString("F2", CultureInfo.InvariantCulture);
+            var c = CultureInfo.InvariantCulture;
             string m = "\"" + message.Replace("\"", "\"\"") + "\"";
-            File.AppendAllText(path, string.Join(",", session, t, before, action, result, after, m) + "\n");
+            File.AppendAllText(path, string.Join(",", session, fault, s.elapsed.ToString("F2", c), before, action, result, after,
+                s.wrongCount.ToString(c), s.penaltySeconds.ToString("F0", c), s.TotalTime.ToString("F2", c), m) + "\n");
         }
     }
 }
