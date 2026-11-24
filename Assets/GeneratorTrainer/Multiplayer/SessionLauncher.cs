@@ -37,6 +37,17 @@ namespace GeneratorTrainer.Multiplayer
 
         NetworkRunner runner;
         bool restarting;
+        string notice = "";
+        float noticeUntil;
+
+        // Short message under the session bar, e.g. "Player 1 left the session."
+        public void Notify(string text, float seconds = 5f)
+        {
+            notice = text ?? "";
+            noticeUntil = Time.unscaledTime + seconds;
+        }
+
+        public string ActiveNotice { get { return Time.unscaledTime < noticeUntil ? notice : ""; } }
 
         void Awake()
         {

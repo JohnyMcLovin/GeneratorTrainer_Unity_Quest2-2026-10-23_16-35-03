@@ -9,7 +9,7 @@ namespace GeneratorTrainer.Multiplayer
     {
         public SessionLauncher launcher;
         string joinCode = "";
-        GUIStyle title, text, button, field, bar;
+        GUIStyle title, text, button, field, bar, noticeStyle;
 
         void Awake() { if (launcher == null) launcher = GetComponent<SessionLauncher>(); }
 
@@ -59,9 +59,11 @@ namespace GeneratorTrainer.Multiplayer
             string status = "Session code: " + launcher.Code + "     Players " + players + "/" + SessionLauncher.MaxPlayers +
                             (players < SessionLauncher.MaxPlayers ? "     waiting for Player 2..." : "");
             GUI.Label(new Rect(w / 2 - 400, 12, 800, 40), status, bar);
+            string notice = launcher.ActiveNotice;
+            if (notice.Length > 0) GUI.Label(new Rect(w / 2 - 400, 58, 800, 40), notice, noticeStyle);
             if (!DesktopPlayerController.CursorLocked)
             {
-                var leave = new Rect(w / 2 - 110, 60, 220, 44);
+                var leave = new Rect(w / 2 - 110, 106, 220, 44);
                 float s = Screen.height / 1080f;
                 leaveButtonScreen = new Rect(leave.x * s, leave.y * s, leave.width * s, leave.height * s);
                 if (GUI.Button(leave, "Leave session", button)) launcher.LeaveSession();
@@ -87,6 +89,8 @@ namespace GeneratorTrainer.Multiplayer
             field = new GUIStyle(GUI.skin.textField) { fontSize = 30, alignment = TextAnchor.MiddleCenter };
             bar = new GUIStyle(GUI.skin.box) { fontSize = 22, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             bar.normal.textColor = Color.white;
+            noticeStyle = new GUIStyle(bar) { fontSize = 20 };
+            noticeStyle.normal.textColor = new Color(1f, 0.84f, 0.4f);
         }
     }
 }
