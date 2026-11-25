@@ -52,6 +52,14 @@ namespace GeneratorTrainer
             chargerCord = cord.AddComponent<LineRenderer>(); chargerCord.useWorldSpace = false; chargerCord.positionCount = 25; chargerCord.widthMultiplier = .014f;
             chargerCord.sharedMaterial = Node("ChargeSocket").GetComponent<Renderer>().sharedMaterial;
         }
+        // Starts a new run (new random fault, timer at 0) without logging anything for the old one.
+        // Used by multiplayer when a session starts, so time spent in the menu or waiting for the partner is not counted.
+        public void RestartRun()
+        {
+            state = NewRun();
+            log = new RunLogger(state.fault.ToString());
+        }
+
         public void Interact(string action, int index)
         {
             if (InteractFilter != null && InteractFilter(action, index)) return;

@@ -64,7 +64,28 @@ namespace GeneratorTrainer.Multiplayer
             Instance = this;
             trainer.InteractFilter = FilterInteract;
             trainer.simulate = HasStateAuthority;
-            if (HasStateAuthority) WriteState();
+            if (HasStateAuthority)
+            {
+                // Rule 1: creating a session starts a fresh run at 0:00 (time spent in the menu does not count).
+                // HasState == 0 means the shared state was never written in this session, i.e. we just created it.
+                if (HasState == 0) trainer.RestartRun();
+                WriteState();
+            }
+        }
+
+        // Rule 2: when the partner first joins and nobody has completed a step yet, restart at 0:00 so the time
+        // Player 1 spent waiting does not count. Once the first step is done, a run is never reset automatically
+        // (leaving / rejoining keeps the run and the timer; only the RESET button restarts it).
+        bool partnerJoined;
+
+        void RestartWhenPartnerJoins()
+        {
+            if (partnerJoined) return;
+            int players = 0;
+            foreach (var p in Runner.ActivePlayers) players++;
+            if (players < 2) return;
+            partnerJoined = true;
+            if (trainer.state.step == 0 && !trainer.state.Complete) trainer.RestartRun();
         }
 
         public override void Despawned(NetworkRunner runner, bool hasState)
@@ -76,6 +97,7 @@ namespace GeneratorTrainer.Multiplayer
         public override void FixedUpdateNetwork()
         {
             if (!HasStateAuthority) return;
+            RestartWhenPartnerJoins();
             WriteState();
             ExpireLocks();
         }
