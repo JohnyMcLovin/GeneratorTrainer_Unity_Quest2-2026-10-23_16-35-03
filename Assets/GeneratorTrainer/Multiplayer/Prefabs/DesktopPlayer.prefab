@@ -298,10 +298,12 @@ MonoBehaviour:
   _Number: 0
   _Role: 0
   _Pitch: 0
+  avatar: {fileID: 1103355919235995457}
+  head: {fileID: 7674172160538355749}
   controller: {fileID: 127996480973708976}
   interactor: {fileID: 824418936963323570}
   crosshair: {fileID: 1143812669301991749}
-  avatar: {fileID: 1103355919235995457}
   view: {fileID: 1662908074794039859}
   listener: {fileID: 1136836908128669560}
   body: {fileID: 2874453789308047069}
+  vr: {fileID: 0}

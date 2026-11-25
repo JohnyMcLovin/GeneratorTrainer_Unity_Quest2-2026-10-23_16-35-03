@@ -29,13 +29,22 @@ namespace GeneratorTrainer.Multiplayer
         public static NetworkedPlayer Local { get; private set; }
         static readonly List<NetworkedPlayer> All = new List<NetworkedPlayer>();
 
+        public PlayerAvatar avatar;
+        [Tooltip("Head transform: the camera on desktop, the head pivot on VR. Remote copies tilt it by Pitch.")]
+        public Transform head;
+
+        [Header("Desktop player only (empty on the VR player)")]
         public DesktopPlayerController controller;
         public DesktopInteractor interactor;
         public Crosshair crosshair;
-        public PlayerAvatar avatar;
         public Camera view;
         public AudioListener listener;
         public CharacterController body;
+
+        [Header("VR player only (empty on the desktop player)")]
+        public VRPresence vr;
+
+        public bool IsVR { get { return vr != null; } }
 
         int shownNumber = -1, shownRole = -1;
         float aloneSince = -1f;
@@ -52,12 +61,13 @@ namespace GeneratorTrainer.Multiplayer
             }
 
             // The prefab starts with all of these switched off; only the owner turns them on.
-            body.enabled = local;
-            controller.enabled = local;
-            interactor.enabled = local;
-            crosshair.enabled = local;
-            view.enabled = local;
-            listener.enabled = local;
+            if (body) body.enabled = local;
+            if (controller) controller.enabled = local;
+            if (interactor) interactor.enabled = local;
+            if (crosshair) crosshair.enabled = local;
+            if (view) view.enabled = local;
+            if (listener) listener.enabled = local;
+            if (vr) vr.isLocal = local;   // a VR presence follows the local VR rig
             avatar.SetLocal(local);
 
             if (local && SessionLauncher.Instance) SessionLauncher.Instance.ShowOverview(false);
@@ -76,7 +86,7 @@ namespace GeneratorTrainer.Multiplayer
         public override void FixedUpdateNetwork()
         {
             if (!HasStateAuthority) return;
-            Pitch = controller.Pitch;
+            Pitch = vr ? vr.HeadPitch : controller ? controller.Pitch : 0f;
 
             int desired = DesiredNumber();
             if (desired != Number)
@@ -115,8 +125,9 @@ namespace GeneratorTrainer.Multiplayer
         public override void Render()
         {
             // Remote copy: tilt the head the way its owner is looking (the avatar's head follows this transform).
-            if (!HasStateAuthority && controller.head)
-                controller.head.localRotation = Quaternion.Euler(Pitch, 0f, 0f);
+            Transform h = head ? head : controller ? controller.head : null;
+            if (!HasStateAuthority && h)
+                h.localRotation = Quaternion.Euler(Pitch, 0f, 0f);
             ApplyIdentity();
         }
 
@@ -130,11 +141,18 @@ namespace GeneratorTrainer.Multiplayer
             gameObject.name = "Player " + Number + (HasStateAuthority ? " (you)" : "");
 
             // Milestone 5: the tablet exists only on the computer of the player holding the instructions.
+            // Desktop: on the camera. VR: in the left hand (the local VR rig's left controller).
             if (HasStateAuthority)
             {
-                var tablet = view.GetComponent<InstructionTablet>();
+                Transform anchor = IsVR ? (VRRig.Local != null ? VRRig.Local.leftHand : null) : (view ? view.transform : null);
+                if (anchor == null) return;
+                var tablet = anchor.GetComponent<InstructionTablet>();
                 bool wantTablet = (PlayerRole)Role == PlayerRole.Instructions;
-                if (wantTablet && tablet == null) view.gameObject.AddComponent<InstructionTablet>();
+                if (wantTablet && tablet == null)
+                {
+                    tablet = anchor.gameObject.AddComponent<InstructionTablet>();
+                    if (IsVR) tablet.UseVRPose();   // before its Start runs (next frame)
+                }
                 else if (!wantTablet && tablet != null) Destroy(tablet);
             }
         }

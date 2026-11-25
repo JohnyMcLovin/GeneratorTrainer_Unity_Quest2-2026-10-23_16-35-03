@@ -28,6 +28,23 @@ namespace GeneratorTrainer.Multiplayer
 
         public bool Raised { get; private set; }
 
+        // VR (Milestone 7): held in the left hand; the Y button hides / shows it instead of raising it.
+        [System.NonSerialized] public bool vrMode;
+        UnityEngine.InputSystem.InputAction vrToggle;
+
+        // Pose on the left controller: a little above the hand, tilted back towards the eyes like a held tablet.
+        public static readonly Vector3 VRPosition = new Vector3(0f, 0.07f, 0.06f);
+        public static readonly Vector3 VRRotation = new Vector3(40f, 0f, 0f);
+
+        // Call before Start when attaching to a VR controller.
+        public void UseVRPose()
+        {
+            vrMode = true;
+            desktopToggle = false;
+            loweredPosition = raisedPosition = VRPosition;
+            loweredRotation = raisedRotation = VRRotation;
+        }
+
         Transform tablet;
         Material uiMaterial;
         Text header, instruction, tip, message, progressLabel, status;
@@ -39,11 +56,17 @@ namespace GeneratorTrainer.Multiplayer
             Build();
             tablet.localPosition = loweredPosition;
             tablet.localRotation = Quaternion.Euler(loweredRotation);
+            if (vrMode)
+            {
+                vrToggle = new UnityEngine.InputSystem.InputAction("TabletToggle", binding: "<XRController>{LeftHand}/secondaryButton");
+                vrToggle.Enable();
+            }
         }
 
         void Update()
         {
             if (desktopToggle && DesktopInput.TabPressed) Raised = !Raised;
+            if (vrToggle != null && vrToggle.WasPressedThisFrame()) tablet.gameObject.SetActive(!tablet.gameObject.activeSelf);
             float k = 1f - Mathf.Exp(-moveSpeed * Time.unscaledDeltaTime);
             tablet.localPosition = Vector3.Lerp(tablet.localPosition, Raised ? raisedPosition : loweredPosition, k);
             tablet.localRotation = Quaternion.Slerp(tablet.localRotation, Quaternion.Euler(Raised ? raisedRotation : loweredRotation), k);
@@ -77,7 +100,7 @@ namespace GeneratorTrainer.Multiplayer
             Set(status, s.Complete
                 ? "Finished: " + TrainingHud.Clock(s.elapsed) + " + " + s.penaltySeconds.ToString("0") + " s penalty = " + TrainingHud.Clock(s.TotalTime)
                 : "Time " + TrainingHud.Clock(s.elapsed) + "   |   " + penalty + "   |   Total " + TrainingHud.Clock(s.TotalTime)
-                  + "        Tab: " + (Raised ? "lower" : "raise"));
+                  + (vrMode ? "        Y: hide" : "        Tab: " + (Raised ? "lower" : "raise")));
         }
 
         static void Set(Text t, string value) { if (t.text != value) t.text = value; }
@@ -180,6 +203,7 @@ namespace GeneratorTrainer.Multiplayer
 
         void OnDestroy()
         {
+            if (vrToggle != null) { vrToggle.Disable(); vrToggle.Dispose(); }
             if (uiMaterial) Destroy(uiMaterial);
             if (tablet) Destroy(tablet.gameObject);
         }

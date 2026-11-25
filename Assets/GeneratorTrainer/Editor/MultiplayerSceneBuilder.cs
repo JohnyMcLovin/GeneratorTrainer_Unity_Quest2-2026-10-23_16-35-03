@@ -79,6 +79,13 @@ namespace GeneratorTrainer.Editor
             launcher.spawnPoints = new[] { spawn1, spawn2 };
             session.AddComponent<SessionMenu>().launcher = launcher;
 
+            // Milestone 7: VR. The local VR rig (official XR Interaction Toolkit Starter Assets) sits in the scene
+            // switched off; SessionLauncher turns it on only when a headset runs the app (or the editor simulator
+            // option is ticked). The VRPlayer network prefab is the avatar presence that follows that rig.
+            launcher.vrRig = BuildVRRig(scene);
+            launcher.vrPlayerPrefab = BuildVRPlayerPrefab().GetComponent<NetworkObject>();
+            launcher.xrDeviceSimulatorPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(XRSimulatorPrefabPath);
+
             EditorSceneManager.SaveScene(scene, ScenePath);
             // Save once more so the bake also sees the objects' final file IDs.
             EditorSceneManager.MarkSceneDirty(scene);
@@ -87,6 +94,61 @@ namespace GeneratorTrainer.Editor
             AssetDatabase.SaveAssets();
             Debug.Log("[MultiplayerSceneBuilder] Saved " + ScenePath + " and " + PlayerPrefabPath +
                       ". Press Play, then Create session or Join with a code. In game: WASD walk, mouse look, left-click controls, Esc frees the mouse.");
+        }
+
+        // ---------------- VR (Milestone 7) ----------------
+
+        public const string VRPlayerPrefabPath = PrefabFolder + "/VRPlayer.prefab";
+        const string StarterAssets = "Assets/Samples/XR Interaction Toolkit/2.5.4/Starter Assets/Prefabs";
+        const string XRInteractionSetupPath = StarterAssets + "/XR Interaction Setup.prefab";
+        const string XROriginPath = StarterAssets + "/XR Origin (XR Rig).prefab";
+        const string XRSimulatorPrefabPath = "Assets/Samples/XR Interaction Toolkit/2.5.4/XR Device Simulator/XR Device Simulator.prefab";
+
+        static VRRig BuildVRRig(UnityEngine.SceneManagement.Scene scene)
+        {
+            var setupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(XRInteractionSetupPath);
+            var originPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(XROriginPath);
+            if (setupPrefab == null || originPrefab == null)
+            {
+                Debug.LogError("[MultiplayerSceneBuilder] XR Interaction Toolkit Starter Assets not found under " + StarterAssets + ". VR is not set up.");
+                return null;
+            }
+            var root = new GameObject("VRRig (local, VR mode only)");
+            // Input actions, interaction manager and the UI event system for the controller rays.
+            var setup = (GameObject)PrefabUtility.InstantiatePrefab(setupPrefab, scene);
+            setup.transform.SetParent(root.transform, false);
+            // Head + two controllers, move / turn / teleport.
+            var origin = (GameObject)PrefabUtility.InstantiatePrefab(originPrefab, scene);
+            origin.transform.SetParent(root.transform, false);
+            var rig = root.AddComponent<VRRig>();
+            rig.origin = origin.GetComponent<Unity.XR.CoreUtils.XROrigin>();
+            root.SetActive(false);   // desktop players never use it
+            return rig;
+        }
+
+        static GameObject BuildVRPlayerPrefab()
+        {
+            var root = new GameObject("VRPlayer");
+            var head = new GameObject("Head").transform;
+            head.SetParent(root.transform, false);
+            head.localPosition = new Vector3(0, 1.62f, 0);
+
+            var presence = root.AddComponent<VRPresence>();
+            presence.head = head;
+            var avatar = root.AddComponent<PlayerAvatar>();
+            avatar.role = PlayerRole.Instructions; avatar.playerNumber = 1; avatar.isLocalPlayer = true; avatar.head = head;
+
+            var netObj = root.AddComponent<NetworkObject>();
+            netObj.Flags |= NetworkObjectFlags.DestroyWhenStateAuthorityLeaves;
+            // VRPresence moves the object in LateUpdate (following the headset), like the desktop controller in Update.
+            var netTransform = root.AddComponent<NetworkTransform>();
+            netTransform.ConfigFlags |= NetworkTransform.NetworkTransformFlags.DisableSharedModeInterpolation;
+            var net = root.AddComponent<NetworkedPlayer>();
+            net.avatar = avatar; net.head = head; net.vr = presence;
+
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, VRPlayerPrefabPath);
+            Object.DestroyImmediate(root);
+            return prefab;
         }
 
         static Transform SpawnPoint(Transform parent, string name, Vector3 position)
@@ -145,7 +207,7 @@ namespace GeneratorTrainer.Editor
             netTransform.ConfigFlags |= NetworkTransform.NetworkTransformFlags.DisableSharedModeInterpolation;
             var net = root.AddComponent<NetworkedPlayer>();
             net.controller = controller; net.interactor = interactor; net.crosshair = crosshair; net.avatar = avatar;
-            net.view = cam; net.listener = listener; net.body = body;
+            net.view = cam; net.listener = listener; net.body = body; net.head = head.transform;
             body.enabled = false; controller.enabled = false; interactor.enabled = false; crosshair.enabled = false;
             cam.enabled = false; listener.enabled = false;
 

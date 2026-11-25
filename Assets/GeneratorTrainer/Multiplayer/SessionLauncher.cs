@@ -30,6 +30,17 @@ namespace GeneratorTrainer.Multiplayer
         [Tooltip("Camera that shows the generator behind the menu until your player spawns.")] public Camera overviewCamera;
         [Tooltip("0 = session creator (Player 1), 1 = the player who joins (Player 2).")] public Transform[] spawnPoints;
 
+        [Header("VR (Milestone 7)")]
+        [Tooltip("The VRPlayer network prefab (avatar presence that follows the local VR rig).")] public NetworkObject vrPlayerPrefab;
+        [Tooltip("The local VR rig in the scene (inactive unless VR mode).")] public VRRig vrRig;
+        [Tooltip("Editor only: test the VR player with the XR Device Simulator (keyboard + mouse), no headset needed.")]
+        public bool simulateVRInEditor;
+        [Tooltip("XR Device Simulator prefab from the XR Interaction Toolkit samples (used only with the option above).")]
+        public GameObject xrDeviceSimulatorPrefab;
+
+        // VR mode: a headset is running the app (Quest build), or the editor simulator option is on.
+        public bool UseVR { get; private set; }
+
         public SessionState State { get; private set; }
         public string Code { get; private set; } = "";
         public string Message { get; private set; } = "";
@@ -63,6 +74,20 @@ namespace GeneratorTrainer.Multiplayer
             TrainingHud.AutoCreate = false;
             var trainer = FindAnyObjectByType<GeneratorTraining>();
             if (trainer) trainer.boardStepText = BoardText;
+
+            // Milestone 7: VR mode switches on the local VR rig and the VR menu instead of the desktop menu.
+            UseVR = vrRig != null && (UnityEngine.XR.XRSettings.isDeviceActive || (Application.isEditor && simulateVRInEditor));
+            if (UseVR)
+            {
+                if (Application.isEditor && simulateVRInEditor && !UnityEngine.XR.XRSettings.isDeviceActive && xrDeviceSimulatorPrefab)
+                    Instantiate(xrDeviceSimulatorPrefab);
+                vrRig.gameObject.SetActive(true);
+                if (spawnPoints != null && spawnPoints.Length > 0 && spawnPoints[0]) vrRig.MoveTo(spawnPoints[0].position, spawnPoints[0].rotation);
+                ShowOverview(false);
+                var desktopMenu = GetComponent<SessionMenu>();
+                if (desktopMenu) desktopMenu.enabled = false;
+                if (GetComponent<VRSessionMenu>() == null) gameObject.AddComponent<VRSessionMenu>().launcher = this;
+            }
         }
 
         public const string BoardText = "Follow Player 1's instructions";
@@ -117,6 +142,7 @@ namespace GeneratorTrainer.Multiplayer
         // Called by the local NetworkedPlayer when it has spawned (its own camera takes over).
         public void ShowOverview(bool show)
         {
+            if (UseVR) show = false;   // in VR the headset is the camera
             if (overviewCamera) overviewCamera.gameObject.SetActive(show);
         }
 
@@ -154,7 +180,12 @@ namespace GeneratorTrainer.Multiplayer
             Transform point = spawnPoints != null && spawnPoints.Length > slot ? spawnPoints[slot] : null;
             Vector3 position = point ? point.position : Vector3.zero;
             Quaternion rotation = point ? point.rotation : Quaternion.identity;
-            runner.Spawn(playerPrefab, position, rotation, runner.LocalPlayer);
+            if (UseVR)
+            {
+                vrRig.MoveTo(position, rotation);   // move the local rig to the spawn point; the presence follows it
+                runner.Spawn(vrPlayerPrefab, position, rotation, runner.LocalPlayer);
+            }
+            else runner.Spawn(playerPrefab, position, rotation, runner.LocalPlayer);
         }
 
         async Task StopAndRestart(string message)
