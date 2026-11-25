@@ -56,6 +56,9 @@ namespace GeneratorTrainer.Editor
             // ---- Chunk 2: lighting.
             Lighting(root);
 
+            // ---- Chunk 3: safety details.
+            SafetyDetails(root);
+
             MakeStaticRecursive(root.gameObject);
             return root;
         }
@@ -145,6 +148,174 @@ namespace GeneratorTrainer.Editor
             RenderSettings.ambientSkyColor = new Color(0.58f, 0.58f, 0.6f);
             RenderSettings.ambientEquatorColor = new Color(0.45f, 0.45f, 0.46f);
             RenderSettings.ambientGroundColor = new Color(0.28f, 0.27f, 0.26f);
+        }
+
+        // ---------------- chunk 3: safety details ----------------
+        // Decorative only (nothing to click): hazard stripes marking the work zone, safety signs in real sign colours,
+        // a fire extinguisher and a first-aid box. Reuses the generator kit's own sign textures.
+
+        const string Kit = "Assets/GeneratorTrainer/Generated";
+        // Work zone around the generator (and the training board at its left end).
+        const float ZoneMinX = -2.75f, ZoneMaxX = 2.45f, ZoneMinZ = -1.45f, ZoneMaxZ = 1.7f, StripeWidth = 0.14f;
+
+        static void SafetyDetails(Transform root)
+        {
+            var safety = new GameObject("SafetyDetails").transform;
+            safety.SetParent(root, false);
+
+            // Hazard stripes on the floor around the work zone (flat, no collider: never blocks walking or teleporting).
+            float lenX = ZoneMaxX - ZoneMinX, lenZ = ZoneMaxZ - ZoneMinZ, y = -0.006f;
+            var stripesX = StripeMaterial("HazardStripesX", lenX);
+            var stripesZ = StripeMaterial("HazardStripesZ", lenZ);
+            FloorBand(safety, new Vector3((ZoneMinX + ZoneMaxX) / 2f, y, ZoneMinZ), lenX, false, stripesX);
+            FloorBand(safety, new Vector3((ZoneMinX + ZoneMaxX) / 2f, y, ZoneMaxZ), lenX, false, stripesX);
+            FloorBand(safety, new Vector3(ZoneMinX, y, (ZoneMinZ + ZoneMaxZ) / 2f), lenZ, true, stripesZ);
+            FloorBand(safety, new Vector3(ZoneMaxX, y, (ZoneMinZ + ZoneMaxZ) / 2f), lenZ, true, stripesZ);
+
+            // Signs on the back wall (visible when facing the generator, as players do at the start).
+            var back = Vector3.forward;   // direction from the back wall into the room
+            WallSign(safety, "Sign_EyeEarProtection", Load(Kit + "/PPE.mat"), new Vector3(-4.1f, 2.0f, BackZ), back, 0.7f);
+            WallSign(safety, "Sign_HighVoltage", Load(Kit + "/Hazard.mat"), new Vector3(-1.7f, 2.55f, BackZ), back, 0.6f);
+            WallSign(safety, "Sign_NoSmoking", Load(Kit + "/Diesel.mat"), new Vector3(3.3f, 2.0f, BackZ), back, 0.7f);
+
+            // Emergency exit above the roller door (front wall, facing back into the room).
+            TextSign(safety, "Sign_EmergencyExit", "EMERGENCY EXIT", new Color(0.05f, 0.55f, 0.25f), new Vector3(0, 3.62f, FrontZ), Vector3.back, new Vector2(1.3f, 0.32f), 0.06f);
+
+            // Fire extinguisher on the left wall next to the work zone, with its red sign above.
+            FireExtinguisher(safety, new Vector3(MinX, 0f, 0.9f));
+            TextSign(safety, "Sign_FireExtinguisher", "FIRE\nEXTINGUISHER", new Color(0.8f, 0.1f, 0.08f), new Vector3(MinX, 1.75f, 0.9f), Vector3.right, new Vector2(0.5f, 0.32f), 0.045f);
+
+            // First-aid box on the front wall, right of the roller door.
+            FirstAid(safety, new Vector3(3.2f, 1.55f, FrontZ));
+        }
+
+        static void FloorBand(Transform parent, Vector3 centre, float length, bool alongZ, Material material)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            go.name = "HazardStripe";
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.SetParent(parent, false);
+            go.transform.position = centre;
+            go.transform.rotation = Quaternion.Euler(90f, alongZ ? 90f : 0f, 0f);   // lying flat, facing up
+            go.transform.localScale = new Vector3(length, StripeWidth, 1f);
+            var r = go.GetComponent<Renderer>();
+            r.sharedMaterial = material;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+        }
+
+        // A flat sign on a wall. 'inward' points from the wall into the room (the side people read it from).
+        static void WallSign(Transform parent, string name, Material material, Vector3 wallPoint, Vector3 inward, float size)
+        {
+            if (material == null) return;
+            var sign = new GameObject(name).transform;
+            sign.SetParent(parent, false);
+            sign.position = wallPoint + inward * 0.012f;
+            sign.rotation = Quaternion.LookRotation(-inward);   // the quad's front faces into the room
+            var plate = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            plate.name = "Face";
+            Object.DestroyImmediate(plate.GetComponent<Collider>());
+            plate.transform.SetParent(sign, false);
+            plate.transform.localScale = new Vector3(size, size, 1f);
+            var r = plate.GetComponent<Renderer>();
+            r.sharedMaterial = material;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+        }
+
+        // A coloured board with white text (exit / fire extinguisher signs).
+        static void TextSign(Transform parent, string name, string text, Color color, Vector3 wallPoint, Vector3 inward, Vector2 size, float textSize)
+        {
+            var sign = new GameObject(name).transform;
+            sign.SetParent(parent, false);
+            sign.position = wallPoint + inward * 0.02f;
+            sign.rotation = Quaternion.LookRotation(-inward);
+            var board = Box(sign, "Board", sign.position, new Vector3(size.x, size.y, 0.02f), Mat(name + "Colour", color, null, Vector2.one, 0.2f), false, false);
+            board.transform.rotation = sign.rotation;
+            var label = new GameObject("Text");
+            label.transform.SetParent(sign, false);
+            label.transform.localPosition = new Vector3(0, 0, -0.015f);   // just in front of the board
+            var tm = label.AddComponent<TextMesh>();
+            tm.text = text;
+            tm.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            tm.fontSize = 96;
+            tm.characterSize = textSize / 6f * 64f / 96f * 6f / 6f;
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.alignment = TextAlignment.Center;
+            tm.fontStyle = FontStyle.Bold;
+            tm.color = Color.white;
+            var labelMat = Load(Kit + "/LabelText.mat");
+            label.GetComponent<MeshRenderer>().sharedMaterial = labelMat != null ? labelMat : tm.font.material;
+        }
+
+        static void FireExtinguisher(Transform parent, Vector3 wallBase)
+        {
+            var ext = new GameObject("FireExtinguisher").transform;
+            ext.SetParent(parent, false);
+            var red = Mat("ExtinguisherRed", new Color(0.78f, 0.06f, 0.04f), null, Vector2.one, 0.6f, 0.1f);
+            var black = Mat("ExtinguisherBlack", new Color(0.06f, 0.06f, 0.06f), null, Vector2.one, 0.3f);
+            float x = wallBase.x + 0.12f, z = wallBase.z;
+            Box(ext, "Bracket", new Vector3(wallBase.x + 0.02f, 0.95f, z), new Vector3(0.04f, 0.18f, 0.14f), black, false, false);
+            Cylinder(ext, "Body", new Vector3(x, 0.78f, z), new Vector3(0.17f, 0.27f, 0.17f), red);
+            Cylinder(ext, "Top", new Vector3(x, 1.08f, z), new Vector3(0.09f, 0.04f, 0.09f), black);
+            Box(ext, "Handle", new Vector3(x, 1.14f, z), new Vector3(0.04f, 0.03f, 0.14f), black, false, false);
+            var hose = Cylinder(ext, "Hose", new Vector3(x + 0.06f, 0.9f, z + 0.08f), new Vector3(0.025f, 0.2f, 0.025f), black);
+            hose.transform.rotation = Quaternion.Euler(18f, 0f, 0f);
+        }
+
+        static void FirstAid(Transform parent, Vector3 wallPoint)
+        {
+            var box = new GameObject("FirstAidKit").transform;
+            box.SetParent(parent, false);
+            var green = Mat("FirstAidGreen", new Color(0.05f, 0.55f, 0.25f), null, Vector2.one, 0.3f);
+            var white = Mat("FirstAidWhite", Color.white, null, Vector2.one, 0.3f);
+            float z = wallPoint.z - 0.07f;
+            Box(box, "Box", new Vector3(wallPoint.x, wallPoint.y, z), new Vector3(0.4f, 0.32f, 0.14f), green, false, false);
+            Box(box, "CrossV", new Vector3(wallPoint.x, wallPoint.y, z - 0.072f), new Vector3(0.07f, 0.2f, 0.005f), white, false, false);
+            Box(box, "CrossH", new Vector3(wallPoint.x, wallPoint.y, z - 0.072f), new Vector3(0.2f, 0.07f, 0.005f), white, false, false);
+        }
+
+        static GameObject Cylinder(Transform parent, string name, Vector3 position, Vector3 scale, Material material)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            go.name = name;
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            go.transform.localScale = scale;
+            var r = go.GetComponent<Renderer>();
+            r.sharedMaterial = material;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            return go;
+        }
+
+        static Material Load(string path) { return AssetDatabase.LoadAssetAtPath<Material>(path); }
+
+        // Yellow-black diagonal stripes, tiled along the band (one stripe pair every 25 cm).
+        static Material StripeMaterial(string name, float length)
+        {
+            return Mat(name, Color.white, StripeTexture(), new Vector2(length / 0.25f, 1f), 0.25f);
+        }
+
+        static Texture2D StripeTexture()
+        {
+            string path = Folder + "/HazardStripes.png";
+            var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null) return existing;
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGB24, false);
+            var yellow = new Color(0.95f, 0.75f, 0.08f);
+            var black = new Color(0.07f, 0.07f, 0.07f);
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                    tex.SetPixel(x, y, ((x + y) / (size / 2)) % 2 == 0 ? yellow : black);   // tileable diagonals
+            tex.Apply();
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+            AssetDatabase.ImportAsset(path);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.mipmapEnabled = true;
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
         // ---------------- helpers ----------------

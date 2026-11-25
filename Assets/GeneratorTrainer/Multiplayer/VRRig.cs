@@ -43,7 +43,11 @@ namespace GeneratorTrainer.Multiplayer
                                    new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) });
         }
 
-        void OnDestroy() { if (Local == this) Local = null; }
+        void OnDestroy()
+        {
+            if (Local == this) Local = null;
+            if (fadeMaterial) Destroy(fadeMaterial);
+        }
 
         static Transform FindChild(Transform root, string name)
         {
@@ -133,8 +137,72 @@ namespace GeneratorTrainer.Multiplayer
             origin.transform.SetPositionAndRotation(position, Quaternion.Euler(0f, rotation.eulerAngles.y, 0f));
         }
 
+        // ---------------- head-in-geometry fade ----------------
+        // The game cannot stop a player from physically walking or leaning into a wall or the generator. Like most VR
+        // apps, the view fades to black while the head is inside solid geometry and comes back when they step out.
+        // Only solid scene geometry counts - not the rig itself, the avatars, or the clickable control / PPE hit boxes
+        // (leaning in close to press a button must not fade).
+        const float HeadRadius = 0.1f, FadeSpeed = 8f;
+        readonly Collider[] overlaps = new Collider[16];
+        GameObject fade;
+        UnityEngine.UI.Image fadeImage;
+        Material fadeMaterial;
+        float fadeAlpha;
+
+        void UpdateHeadFade()
+        {
+            if (head == null) return;
+            if (fade == null) BuildFade();
+            float target = HeadInsideGeometry() ? 1f : 0f;
+            fadeAlpha = Mathf.MoveTowards(fadeAlpha, target, FadeSpeed * Time.unscaledDeltaTime);
+            bool visible = fadeAlpha > 0.001f;
+            if (fade.activeSelf != visible) fade.SetActive(visible);
+            if (visible) fadeImage.color = new Color(0f, 0f, 0f, fadeAlpha);
+        }
+
+        bool HeadInsideGeometry()
+        {
+            int n = Physics.OverlapSphereNonAlloc(head.position, HeadRadius, overlaps, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+            {
+                var c = overlaps[i];
+                if (c == null || c is CharacterController) continue;                     // the rig's own body capsule
+                if (origin != null && c.transform.IsChildOf(origin.transform)) continue;  // controllers, rig parts
+                if (c.GetComponentInParent<TrainerControl>() != null) continue;            // button hit boxes
+                if (c.GetComponentInParent<PPEItem>() != null) continue;                   // PPE items on the table
+                if (c.GetComponentInParent<XRBaseInteractable>() != null && c.GetComponent<TeleportationArea>() == null) continue;
+                if (c.GetComponentInParent<NetworkedPlayer>() != null) continue;           // avatars
+                return true;
+            }
+            return false;
+        }
+
+        void BuildFade()
+        {
+            fadeMaterial = new Material(UnityEngine.UI.Graphic.defaultGraphicMaterial);
+            fadeMaterial.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
+            fade = new GameObject("HeadFade", typeof(RectTransform));
+            fade.transform.SetParent(head, false);
+            fade.transform.localPosition = new Vector3(0f, 0f, 0.08f);   // in front of the eyes (and the glasses lens)
+            var canvas = fade.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.sortingOrder = 1000;   // covers everything, including the tablet and the menu
+            var rect = (RectTransform)fade.transform;
+            rect.sizeDelta = new Vector2(1000, 1000);
+            fade.transform.localScale = Vector3.one * 0.0005f;   // 0.5 m square at 8 cm: the whole field of view
+            var img = new GameObject("Black", typeof(RectTransform)).AddComponent<UnityEngine.UI.Image>();
+            img.transform.SetParent(fade.transform, false);
+            img.material = fadeMaterial;
+            img.raycastTarget = false;
+            var r = img.rectTransform;
+            r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.offsetMin = r.offsetMax = Vector2.zero;
+            fadeImage = img;
+            fade.SetActive(false);
+        }
+
         void Update()
         {
+            UpdateHeadFade();
             // Red ray over a control that the other player is operating (component lock), otherwise normal colours.
             var sync = GeneratorNetSync.Instance;
             foreach (var ray in rays)
