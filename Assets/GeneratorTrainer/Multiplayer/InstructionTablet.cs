@@ -80,6 +80,7 @@ namespace GeneratorTrainer.Multiplayer
             Set(header, s.Complete ? "ALL STEPS DONE" : "STEP " + s.Position + " / " + s.RequiredCount + "   |   " + TrainingHud.Phase(s.Current));
             Set(instruction, s.Current);
             string t = s.Complete ? TrainingHud.DoneTip : (s.step < TrainingHud.Tips.Length ? TrainingHud.Tips[s.step] : "");
+            if (!s.Complete && s.step == 0 && PPEStation.Instance != null) t = PPEStation.Instance.TipText();   // PPE table instead of the board button
             Set(tip, t.Length > 0 ? "Tip: " + t : "");
             Set(message, s.feedback);
 

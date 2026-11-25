@@ -73,6 +73,34 @@ namespace GeneratorTrainer.Multiplayer
             }
         }
 
+        // Step A1 with the PPE table: completes (the same "PPE" action as the old board button) as soon as every
+        // player in the session wears safety glasses AND ear defenders. Waits until all players' objects have arrived.
+        const string DefaultA1Feedback = "Confirm eye and ear protection on the PPE button.";
+        const string TableA1Feedback = "Put on safety glasses and ear defenders from the PPE table (every player).";
+
+        void CompleteA1WhenEveryoneWearsPPE()
+        {
+            if (PPEStation.Instance == null) return;
+            var s = trainer.state;
+            if (s.step != 0 || s.Complete) return;
+            if (s.feedback == DefaultA1Feedback) s.feedback = TableA1Feedback;   // the board button no longer exists here
+            // Right after RESET / a new session every player's computer first takes the PPE off (NetworkedPlayer);
+            // wait a moment so the old "wearing" state cannot complete A1 of the new run instantly.
+            if (s.elapsed < 1.5f) return;
+
+            int inSession = 0;
+            foreach (var p in Runner.ActivePlayers) inSession++;
+            int seen = 0, equipped = 0;
+            foreach (var p in NetworkedPlayer.Players)
+            {
+                if (p == null || p.Object == null || !p.Object.IsValid) continue;
+                seen++;
+                if (p.FullyEquipped) equipped++;
+            }
+            if (seen == 0 || seen < inSession || equipped < seen) return;
+            trainer.Interact("PPE", 0);   // -> "Eye and ear protection confirmed.", step A2
+        }
+
         // Rule 2: when the partner first joins and nobody has completed a step yet, restart at 0:00 so the time
         // Player 1 spent waiting does not count. Once the first step is done, a run is never reset automatically
         // (leaving / rejoining keeps the run and the timer; only the RESET button restarts it).
@@ -98,6 +126,7 @@ namespace GeneratorTrainer.Multiplayer
         {
             if (!HasStateAuthority) return;
             RestartWhenPartnerJoins();
+            CompleteA1WhenEveryoneWearsPPE();
             WriteState();
             ExpireLocks();
         }

@@ -35,8 +35,9 @@ namespace GeneratorTrainer.Multiplayer
             }
 
             TrainerControl hovered = interactor != null ? interactor.Hovered : null;
+            PPEItem ppe = interactor != null ? interactor.HoveredPPE : null;
             int lockedBy = interactor != null ? interactor.HoveredLockedBy : 0;
-            Color colour = hovered ? (lockedBy != 0 ? busy : active) : idle;
+            Color colour = hovered || ppe ? (lockedBy != 0 ? busy : active) : idle;
             float size = Mathf.Max(4f, (hovered ? 10f : 6f) * scale);
             Color old = GUI.color;
             GUI.color = new Color(0, 0, 0, 0.6f);
@@ -45,7 +46,9 @@ namespace GeneratorTrainer.Multiplayer
             GUI.DrawTexture(new Rect(c.x - size / 2, c.y - size / 2, size, size), Texture2D.whiteTexture);
             GUI.color = old;
 
-            if (hovered)
+            if (ppe && PPEStation.Instance != null)
+                Shadowed(new Rect(c.x - 300, c.y + 14 * scale, 600, 40 * scale), PPEStation.Instance.HoverText(ppe.kind), label, colour);
+            else if (hovered)
             {
                 string text = ControlLabels.For(hovered) + (lockedBy != 0 ? "  -  In use by Player " + lockedBy : "");
                 Shadowed(new Rect(c.x - 300, c.y + 14 * scale, 600, 40 * scale), text, label, colour);

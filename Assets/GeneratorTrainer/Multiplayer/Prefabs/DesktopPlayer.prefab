@@ -298,6 +298,10 @@ MonoBehaviour:
   _Number: 0
   _Role: 0
   _Pitch: 0
+  _WearsGlasses:
+    RawValue: 0
+  _WearsEarProtection:
+    RawValue: 0
   avatar: {fileID: 1103355919235995457}
   head: {fileID: 7674172160538355749}
   controller: {fileID: 127996480973708976}

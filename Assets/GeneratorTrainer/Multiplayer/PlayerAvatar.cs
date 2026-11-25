@@ -26,8 +26,15 @@ namespace GeneratorTrainer.Multiplayer
         Transform headPivot, nameTag;
         TextMesh tagText;
         Renderer bodyRenderer, headRenderer;
-        Transform tabletProp;
+        Transform tabletProp, avatarGlasses, avatarEars;
         bool built;
+
+        public void SetPPE(bool glasses, bool earProtection)
+        {
+            if (!built) return;
+            avatarGlasses.gameObject.SetActive(glasses);
+            avatarEars.gameObject.SetActive(earProtection);
+        }
 
         void Awake() { Build(); }
 
@@ -46,6 +53,24 @@ namespace GeneratorTrainer.Multiplayer
             headRenderer = Part(PrimitiveType.Sphere, headPivot, "Head", Vector3.zero, Vector3.one * 0.28f);
             var visor = Part(PrimitiveType.Cube, headPivot, "Visor", new Vector3(0, 0.02f, 0.12f), new Vector3(0.22f, 0.08f, 0.06f));
             visor.material.color = new Color(0.05f, 0.06f, 0.08f);
+
+            // PPE worn on the head (shown when the player has taken it from the PPE table).
+            avatarGlasses = new GameObject("WornGlasses").transform;
+            avatarGlasses.SetParent(headPivot, false);
+            var lens = Part(PrimitiveType.Cube, avatarGlasses, "Lens", new Vector3(0, 0.03f, 0.15f), new Vector3(0.24f, 0.06f, 0.02f));
+            lens.material.color = new Color(1f, 0.85f, 0.2f);
+            avatarEars = new GameObject("WornEarDefenders").transform;
+            avatarEars.SetParent(headPivot, false);
+            var band = Part(PrimitiveType.Cube, avatarEars, "Band", new Vector3(0, 0.15f, 0), new Vector3(0.3f, 0.03f, 0.04f));
+            band.material.color = new Color(0.1f, 0.1f, 0.1f);
+            var cupL = Part(PrimitiveType.Cylinder, avatarEars, "CupL", new Vector3(-0.15f, 0, 0), new Vector3(0.1f, 0.025f, 0.1f));
+            cupL.transform.localRotation = Quaternion.Euler(0, 0, 90f);
+            cupL.material.color = new Color(0.85f, 0.15f, 0.1f);
+            var cupR = Part(PrimitiveType.Cylinder, avatarEars, "CupR", new Vector3(0.15f, 0, 0), new Vector3(0.1f, 0.025f, 0.1f));
+            cupR.transform.localRotation = Quaternion.Euler(0, 0, 90f);
+            cupR.material.color = new Color(0.85f, 0.15f, 0.1f);
+            avatarGlasses.gameObject.SetActive(false);
+            avatarEars.gameObject.SetActive(false);
 
             // Small tablet held in front of the chest (no readable text), shown only for the Instructions role, so
             // the other player sees at a glance who holds the instructions. Tilted with its screen toward the holder.

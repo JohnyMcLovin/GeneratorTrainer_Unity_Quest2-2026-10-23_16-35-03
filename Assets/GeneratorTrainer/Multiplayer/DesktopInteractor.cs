@@ -14,12 +14,14 @@ namespace GeneratorTrainer.Multiplayer
 
         public TrainerControl Hovered { get; private set; }
         public TrainerControl Pressed { get; private set; }
+        public PPEItem HoveredPPE { get; private set; }
 
         void Awake() { if (view == null) view = GetComponentInChildren<Camera>(); }
 
         void Update()
         {
             Hovered = null;
+            HoveredPPE = null;
             bool locked = DesktopPlayerController.CursorLocked;
             if (locked && view != null)
             {
@@ -27,10 +29,16 @@ namespace GeneratorTrainer.Multiplayer
                 RaycastHit hit;
                 var ray = new Ray(view.transform.position, view.transform.forward);
                 if (Physics.Raycast(ray, out hit, reach, ~0, QueryTriggerInteraction.Ignore))
+                {
                     Hovered = hit.collider.GetComponentInParent<TrainerControl>();
+                    HoveredPPE = hit.collider.GetComponentInParent<PPEItem>();
+                }
             }
 
             bool canClick = locked && Time.frameCount != DesktopPlayerController.LockedOnFrame;
+            // PPE table (step A1): clicking an item puts it on.
+            if (canClick && DesktopInput.ClickDown && HoveredPPE != null && PPEStation.Instance != null)
+                PPEStation.Instance.Take(HoveredPPE.kind);
             if (canClick && DesktopInput.ClickDown && Hovered != null)
             {
                 // In a session the press goes through the network bridge, which checks the component lock and

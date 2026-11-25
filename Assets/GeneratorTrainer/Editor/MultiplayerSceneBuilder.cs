@@ -72,6 +72,12 @@ namespace GeneratorTrainer.Editor
             var spawn1 = SpawnPoint(spawns, "Player1Spawn", new Vector3(-0.4f, 0.05f, 3.2f));
             var spawn2 = SpawnPoint(spawns, "Player2Spawn", new Vector3(1.4f, 0.05f, 3.2f));
 
+            // Step A1: PPE table with two sets (safety glasses + ear defenders), between the spawn points and the
+            // generator, so both players see it when they start. It builds its own visuals at runtime.
+            var ppe = new GameObject("PPEStation");
+            ppe.transform.position = new Vector3(0.5f, 0f, 2.3f);
+            ppe.AddComponent<PPEStation>();
+
             var session = new GameObject("Session");
             var launcher = session.AddComponent<SessionLauncher>();
             launcher.playerPrefab = playerPrefab.GetComponent<NetworkObject>();

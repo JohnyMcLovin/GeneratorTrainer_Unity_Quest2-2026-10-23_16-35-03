@@ -55,6 +55,7 @@ namespace GeneratorTrainer.Multiplayer
         {
             UseTriggerToSelect();
             BindGeneratorControls();
+            BindPPEItems();
             MakeFloorTeleportable();
             foreach (var ray in origin.GetComponentsInChildren<XRRayInteractor>(true))
             {
@@ -85,6 +86,18 @@ namespace GeneratorTrainer.Multiplayer
                 var c = control;
                 interactable.selectEntered.AddListener(_ => OnPress(c));
                 interactable.selectExited.AddListener(_ => OnRelease(c));
+            }
+        }
+
+        // PPE table (step A1): point at glasses / ear defenders and pull the trigger to put them on.
+        void BindPPEItems()
+        {
+            foreach (var item in FindObjectsByType<PPEItem>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (item.GetComponent<XRBaseInteractable>() != null) continue;
+                var interactable = item.gameObject.AddComponent<XRSimpleInteractable>();
+                var kind = item.kind;
+                interactable.selectEntered.AddListener(_ => { if (PPEStation.Instance != null) PPEStation.Instance.Take(kind); });
             }
         }
 
