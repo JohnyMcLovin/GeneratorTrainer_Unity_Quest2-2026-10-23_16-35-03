@@ -235,6 +235,10 @@ namespace GeneratorTrainer.Editor
             floor.transform.localScale = new Vector3(12, .1f, 12);
             floor.GetComponent<Renderer>().sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(Generated + "/DarkMetal.mat");
 
+            // The workshop around the generator: room (concrete floor, walls, ceiling, roller door, windows) and
+            // indoor lighting. Replaces the floor material with concrete and sets the ambient light.
+            WorkshopEnvironmentBuilder.Build(floor.transform);
+
             var vent = GameObject.CreatePrimitive(PrimitiveType.Cube);
             vent.name = "OutdoorVentMarker";
             vent.transform.position = new Vector3(.62f, 2, -1.35f);
