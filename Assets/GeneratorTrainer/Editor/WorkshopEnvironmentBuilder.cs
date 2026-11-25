@@ -65,6 +65,9 @@ namespace GeneratorTrainer.Editor
             smoke.transform.SetParent(root, false);
             smoke.material = SmokeMaterial();
 
+            // ---- Chunk 5: props along the walls and in the corners (paths stay free).
+            Props(root);
+
             MakeStaticRecursive(root.gameObject);
             return root;
         }
@@ -390,6 +393,156 @@ namespace GeneratorTrainer.Editor
             EditorUtility.SetDirty(m);
             AssetDatabase.SaveAssets();
             return m;
+        }
+
+        // ---------------- chunk 5: props ----------------
+        // Decorative, solid (you cannot walk through them; in VR the head fade works on them too). Placed along the walls
+        // and in the corners so the paths between spawn points, PPE table, generator, board and fuel side stay free.
+
+        static Material wood, cardboard, rackBlue, rackOrange, drumBlue, drumRed, toolRed, black, pegboard, handleYellow, chrome;
+
+        static void Props(Transform root)
+        {
+            wood = Mat("Wood", new Color(0.55f, 0.4f, 0.25f), null, Vector2.one, 0.15f);
+            cardboard = Mat("Cardboard", new Color(0.72f, 0.56f, 0.36f), null, Vector2.one, 0.05f);
+            rackBlue = Mat("RackBlue", new Color(0.16f, 0.32f, 0.6f), null, Vector2.one, 0.4f, 0.4f);
+            rackOrange = Mat("RackOrange", new Color(0.92f, 0.45f, 0.1f), null, Vector2.one, 0.4f, 0.3f);
+            drumBlue = Mat("DrumBlue", new Color(0.1f, 0.28f, 0.58f), null, Vector2.one, 0.5f, 0.3f);
+            drumRed = Mat("DrumRed", new Color(0.68f, 0.1f, 0.07f), null, Vector2.one, 0.5f, 0.3f);
+            toolRed = Mat("ToolboxRed", new Color(0.78f, 0.08f, 0.06f), null, Vector2.one, 0.6f, 0.2f);
+            black = Mat("PropBlack", new Color(0.06f, 0.06f, 0.06f), null, Vector2.one, 0.3f);
+            pegboard = Mat("Pegboard", new Color(0.5f, 0.45f, 0.38f), null, Vector2.one, 0.1f);
+            handleYellow = Mat("HandleYellow", new Color(0.95f, 0.75f, 0.1f), null, Vector2.one, 0.4f);
+            chrome = Mat("Chrome", new Color(0.75f, 0.76f, 0.78f), null, Vector2.one, 0.8f, 0.9f);
+
+            var props = new GameObject("Props").transform;
+            props.SetParent(root, false);
+            Workbench(props, new Vector3(MinX + 0.4f, 0f, 3.5f));
+            ShelfRack(props, new Vector3(5.05f, 0f, BackZ + 0.27f));
+            OilDrums(props, new Vector3(3.35f, 0f, 0.15f));
+            Pallet(props, new Vector3(4.6f, 0f, 5.4f));
+            CableReel(props, new Vector3(-4.8f, 0f, 5.4f));
+        }
+
+        // Steel workbench against the left wall with a vice, a red toolbox and a tool wall above it.
+        static void Workbench(Transform parent, Vector3 c)
+        {
+            var b = Group(parent, "Workbench");
+            Solid(b, "Top", c + new Vector3(0, 0.9f, 0), new Vector3(0.7f, 0.05f, 2.0f), wood);
+            foreach (float dx in new[] { -0.3f, 0.3f })
+                foreach (float dz in new[] { -0.95f, 0.95f })
+                    Box(b, "Leg", c + new Vector3(dx, 0.44f, dz), new Vector3(0.05f, 0.88f, 0.05f), rackBlue, false, true);
+            Solid(b, "LowerShelf", c + new Vector3(0, 0.2f, 0), new Vector3(0.66f, 0.03f, 1.94f), rackBlue);
+            // Vice
+            Box(b, "ViceBase", c + new Vector3(0.12f, 0.96f, -0.6f), new Vector3(0.18f, 0.07f, 0.14f), rackBlue, false, true);
+            Box(b, "ViceJaw", c + new Vector3(0.12f, 1.04f, -0.6f), new Vector3(0.16f, 0.09f, 0.05f), chrome, false, true);
+            // Toolbox
+            Box(b, "Toolbox", c + new Vector3(0f, 1.035f, 0.55f), new Vector3(0.24f, 0.22f, 0.5f), toolRed, false, true);
+            Box(b, "ToolboxHandle", c + new Vector3(0f, 1.16f, 0.55f), new Vector3(0.03f, 0.03f, 0.3f), black, false, false);
+            // Tool wall (pegboard) with a wrench, a hammer and a screwdriver.
+            float wx = MinX + 0.02f;
+            Box(b, "Pegboard", new Vector3(wx, 1.6f, c.z), new Vector3(0.03f, 0.8f, 1.6f), pegboard, false, false);
+            Box(b, "WrenchHandle", new Vector3(wx + 0.03f, 1.55f, c.z - 0.5f), new Vector3(0.015f, 0.32f, 0.035f), chrome, false, false);
+            Box(b, "WrenchHead", new Vector3(wx + 0.03f, 1.73f, c.z - 0.5f), new Vector3(0.015f, 0.06f, 0.09f), chrome, false, false);
+            Box(b, "HammerHandle", new Vector3(wx + 0.03f, 1.52f, c.z), new Vector3(0.02f, 0.3f, 0.03f), wood, false, false);
+            Box(b, "HammerHead", new Vector3(wx + 0.035f, 1.69f, c.z), new Vector3(0.035f, 0.05f, 0.14f), black, false, false);
+            Box(b, "ScrewdriverHandle", new Vector3(wx + 0.03f, 1.48f, c.z + 0.5f), new Vector3(0.03f, 0.11f, 0.03f), handleYellow, false, false);
+            Box(b, "ScrewdriverShaft", new Vector3(wx + 0.03f, 1.62f, c.z + 0.5f), new Vector3(0.008f, 0.18f, 0.008f), chrome, false, false);
+        }
+
+        // Steel shelf rack against the back wall (right corner) with boxes and small oil canisters.
+        static void ShelfRack(Transform parent, Vector3 c)
+        {
+            var r = Group(parent, "ShelfRack");
+            const float len = 1.6f, depth = 0.5f, height = 2.0f;
+            foreach (float dx in new[] { -len / 2f, len / 2f })
+                foreach (float dz in new[] { -depth / 2f, depth / 2f })
+                    Box(r, "Upright", c + new Vector3(dx, height / 2f, dz), new Vector3(0.05f, height, 0.05f), rackBlue, false, true);
+            float[] shelves = { 0.15f, 0.75f, 1.35f, 1.95f };
+            foreach (float y in shelves)
+            {
+                Solid(r, "Shelf", c + new Vector3(0, y, 0), new Vector3(len, 0.03f, depth), pegboard);
+                Box(r, "Beam", c + new Vector3(0, y - 0.03f, -depth / 2f), new Vector3(len, 0.06f, 0.04f), rackOrange, false, false);
+            }
+            // Contents
+            Solid(r, "Box", c + new Vector3(-0.45f, 0.36f, 0), new Vector3(0.5f, 0.4f, 0.4f), cardboard);
+            Solid(r, "Box", c + new Vector3(0.2f, 0.33f, 0), new Vector3(0.45f, 0.34f, 0.4f), cardboard);
+            Solid(r, "Box", c + new Vector3(-0.35f, 0.93f, 0), new Vector3(0.6f, 0.33f, 0.38f), cardboard);
+            for (int i = 0; i < 4; i++)
+                Cyl(r, "OilCanister", c + new Vector3(0.15f + i * 0.15f, 0.92f, 0), new Vector3(0.11f, 0.16f, 0.11f), i % 2 == 0 ? drumRed : handleYellow, Quaternion.identity, false);
+            Solid(r, "SpareParts", c + new Vector3(0.3f, 1.47f, 0), new Vector3(0.55f, 0.22f, 0.35f), rackBlue);
+            Solid(r, "Box", c + new Vector3(-0.4f, 1.5f, 0), new Vector3(0.45f, 0.28f, 0.36f), cardboard);
+        }
+
+        // Three oil drums on a yellow spill tray near the generator's fuel end.
+        static void OilDrums(Transform parent, Vector3 c)
+        {
+            var d = Group(parent, "OilDrums");
+            Solid(d, "SpillTray", c + new Vector3(0, 0.05f, 0), new Vector3(1.35f, 0.1f, 1.05f), stripe);
+            var spots = new[] { new Vector3(-0.32f, 0, 0.22f), new Vector3(0.32f, 0, 0.22f), new Vector3(0f, 0, -0.26f) };
+            for (int i = 0; i < spots.Length; i++)
+            {
+                var p = c + spots[i];
+                Cyl(d, "Drum", p + new Vector3(0, 0.1f + 0.44f, 0), new Vector3(0.58f, 0.44f, 0.58f), i == 1 ? drumRed : drumBlue, Quaternion.identity, true);
+                Cyl(d, "Rim", p + new Vector3(0, 0.1f + 0.3f, 0), new Vector3(0.6f, 0.015f, 0.6f), black, Quaternion.identity, false);
+                Cyl(d, "Rim", p + new Vector3(0, 0.1f + 0.6f, 0), new Vector3(0.6f, 0.015f, 0.6f), black, Quaternion.identity, false);
+                Cyl(d, "Bung", p + new Vector3(0.12f, 0.1f + 0.89f, 0.05f), new Vector3(0.06f, 0.01f, 0.06f), black, Quaternion.identity, false);
+            }
+        }
+
+        // Wooden pallet with a stack of boxes (a delivery) in the front-right corner.
+        static void Pallet(Transform parent, Vector3 c)
+        {
+            var p = Group(parent, "Pallet");
+            foreach (float dz in new[] { -0.45f, 0f, 0.45f })
+                Box(p, "Block", c + new Vector3(0, 0.05f, dz), new Vector3(1.2f, 0.1f, 0.1f), wood, false, true);
+            for (int i = 0; i < 7; i++)
+                Box(p, "Board", c + new Vector3(-0.54f + i * 0.18f, 0.12f, 0), new Vector3(0.12f, 0.025f, 1.0f), wood, false, true);
+            var hit = Solid(p, "PalletBody", c + new Vector3(0, 0.07f, 0), new Vector3(1.2f, 0.14f, 1.0f), wood);
+            hit.GetComponent<Renderer>().enabled = false;   // invisible collider covering the slats
+            Solid(p, "Box", c + new Vector3(-0.3f, 0.36f, -0.24f), new Vector3(0.56f, 0.45f, 0.46f), cardboard);
+            Solid(p, "Box", c + new Vector3(0.3f, 0.36f, -0.24f), new Vector3(0.56f, 0.45f, 0.46f), cardboard);
+            Solid(p, "Box", c + new Vector3(-0.3f, 0.36f, 0.24f), new Vector3(0.56f, 0.45f, 0.46f), cardboard);
+            Solid(p, "Box", c + new Vector3(0.3f, 0.36f, 0.24f), new Vector3(0.56f, 0.45f, 0.46f), cardboard);
+            Solid(p, "Box", c + new Vector3(0f, 0.8f, 0f), new Vector3(0.6f, 0.42f, 0.5f), cardboard);
+        }
+
+        // Large wooden cable reel with black cable in the front-left corner.
+        static void CableReel(Transform parent, Vector3 c)
+        {
+            var r = Group(parent, "CableReel");
+            var side = Quaternion.Euler(0f, 0f, 90f);   // cylinder axis along X: the reel stands on its rims
+            Cyl(r, "FlangeL", c + new Vector3(-0.32f, 0.5f, 0), new Vector3(1.0f, 0.03f, 1.0f), wood, side, true);
+            Cyl(r, "FlangeR", c + new Vector3(0.32f, 0.5f, 0), new Vector3(1.0f, 0.03f, 1.0f), wood, side, true);
+            Cyl(r, "Cable", c + new Vector3(0f, 0.5f, 0), new Vector3(0.78f, 0.3f, 0.78f), black, side, true);
+            Box(r, "CableEnd", c + new Vector3(0.1f, 0.03f, 0.55f), new Vector3(0.04f, 0.04f, 0.5f), black, false, false);
+        }
+
+        static Transform Group(Transform parent, string name)
+        {
+            var t = new GameObject(name).transform;
+            t.SetParent(parent, false);
+            return t;
+        }
+
+        static GameObject Solid(Transform parent, string name, Vector3 position, Vector3 scale, Material material)
+        {
+            return Box(parent, name, position, scale, material, true, true);
+        }
+
+        static GameObject Cyl(Transform parent, string name, Vector3 position, Vector3 scale, Material material, Quaternion rotation, bool collider)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            go.transform.rotation = rotation;
+            go.transform.localScale = scale;
+            var rend = go.GetComponent<Renderer>();
+            rend.sharedMaterial = material;
+            rend.shadowCastingMode = collider ? ShadowCastingMode.On : ShadowCastingMode.Off;
+            if (!collider) Object.DestroyImmediate(go.GetComponent<Collider>());
+            return go;
         }
 
         // ---------------- helpers ----------------
