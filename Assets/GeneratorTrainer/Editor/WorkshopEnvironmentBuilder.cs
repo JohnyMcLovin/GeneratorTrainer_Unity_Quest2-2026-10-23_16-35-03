@@ -59,6 +59,12 @@ namespace GeneratorTrainer.Editor
             // ---- Chunk 3: safety details.
             SafetyDetails(root);
 
+            // ---- Chunk 4: exhaust vent in the back wall (target of step A2) + exhaust smoke while the engine runs.
+            ExhaustVent(root);
+            var smoke = new GameObject("ExhaustSmoke").AddComponent<GeneratorTrainer.Multiplayer.ExhaustSmoke>();
+            smoke.transform.SetParent(root, false);
+            smoke.material = SmokeMaterial();
+
             MakeStaticRecursive(root.gameObject);
             return root;
         }
@@ -316,6 +322,74 @@ namespace GeneratorTrainer.Editor
             importer.mipmapEnabled = true;
             importer.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        // ---------------- chunk 4: exhaust vent + smoke ----------------
+
+        // Behind the generator, where its exhaust mouth points after step A2 (pipe pivot x 0.62, mouth ~2.1 m high).
+        static readonly Vector3 VentCentre = new Vector3(0.62f, 2.1f, BackZ);
+
+        static void ExhaustVent(Transform root)
+        {
+            var vent = new GameObject("ExhaustVent").transform;
+            vent.SetParent(root, false);
+            var steel = Mat("VentSteel", new Color(0.45f, 0.47f, 0.5f), null, Vector2.one, 0.5f, 0.6f);
+            var dark = Mat("VentOpening", new Color(0.04f, 0.04f, 0.05f), null, Vector2.one, 0.1f);
+            float w = 0.7f, h = 0.6f, z = BackZ;
+
+            // Dark opening "into" the wall, a steel collar around it and slanted louvre slats.
+            Box(vent, "Opening", new Vector3(VentCentre.x, VentCentre.y, z + 0.004f), new Vector3(w, h, 0.004f), dark, false, false);
+            Box(vent, "CollarTop", new Vector3(VentCentre.x, VentCentre.y + h / 2f + 0.03f, z + 0.04f), new Vector3(w + 0.12f, 0.06f, 0.08f), steel, false, false);
+            Box(vent, "CollarBottom", new Vector3(VentCentre.x, VentCentre.y - h / 2f - 0.03f, z + 0.04f), new Vector3(w + 0.12f, 0.06f, 0.08f), steel, false, false);
+            Box(vent, "CollarLeft", new Vector3(VentCentre.x - w / 2f - 0.03f, VentCentre.y, z + 0.04f), new Vector3(0.06f, h, 0.08f), steel, false, false);
+            Box(vent, "CollarRight", new Vector3(VentCentre.x + w / 2f + 0.03f, VentCentre.y, z + 0.04f), new Vector3(0.06f, h, 0.08f), steel, false, false);
+            for (int i = 0; i < 6; i++)
+            {
+                float y = VentCentre.y - h / 2f + 0.07f + i * 0.093f;
+                var slat = Box(vent, "Louvre", new Vector3(VentCentre.x, y, z + 0.035f), new Vector3(w - 0.02f, 0.012f, 0.08f), steel, false, false);
+                slat.transform.rotation = Quaternion.Euler(-35f, 0f, 0f);   // slanted upwards, like an outdoor louvre
+            }
+            TextSign(vent, "Sign_ExhaustVent", "EXHAUST VENT\nTO OUTSIDE", new Color(0.05f, 0.45f, 0.25f),
+                     new Vector3(VentCentre.x, VentCentre.y + h / 2f + 0.24f, z), Vector3.forward, new Vector2(0.75f, 0.26f), 0.042f);
+        }
+
+        // Soft round particle (generated once) with an alpha-blended particle shader.
+        static Material SmokeMaterial()
+        {
+            string texPath = Folder + "/SmokePuff.png";
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            if (tex == null)
+            {
+                const int size = 64;
+                var t = new Texture2D(size, size, TextureFormat.RGBA32, false);
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                    {
+                        float dx = (x + 0.5f) / size - 0.5f, dy = (y + 0.5f) / size - 0.5f;
+                        float d = Mathf.Sqrt(dx * dx + dy * dy) * 2f;           // 0 centre .. 1 edge
+                        float a = Mathf.Clamp01(1f - d);
+                        t.SetPixel(x, y, new Color(1f, 1f, 1f, a * a * (3f - 2f * a)));   // soft falloff
+                    }
+                t.Apply();
+                File.WriteAllBytes(texPath, t.EncodeToPNG());
+                Object.DestroyImmediate(t);
+                AssetDatabase.ImportAsset(texPath);
+                var importer = (TextureImporter)AssetImporter.GetAtPath(texPath);
+                importer.alphaIsTransparency = true;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.SaveAndReimport();
+                tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            }
+            string matPath = Folder + "/ExhaustSmoke.mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            var shader = Shader.Find("Legacy Shaders/Particles/Alpha Blended") ?? Shader.Find("Particles/Standard Unlit");
+            if (m == null) { m = new Material(shader); AssetDatabase.CreateAsset(m, matPath); }
+            else m.shader = shader;
+            m.mainTexture = tex;
+            if (m.HasProperty("_TintColor")) m.SetColor("_TintColor", new Color(0.5f, 0.5f, 0.5f, 0.5f));
+            EditorUtility.SetDirty(m);
+            AssetDatabase.SaveAssets();
+            return m;
         }
 
         // ---------------- helpers ----------------

@@ -237,30 +237,9 @@ namespace GeneratorTrainer.Editor
 
             // The workshop around the generator: room (concrete floor, walls, ceiling, roller door, windows) and
             // indoor lighting. Replaces the floor material with concrete and sets the ambient light.
+            // Includes the exhaust vent in the back wall (target of step A2), which replaces the old floating green
+            // "OUTDOORS / EXHAUST VENT" marker of the other scenes.
             WorkshopEnvironmentBuilder.Build(floor.transform);
-
-            var vent = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            vent.name = "OutdoorVentMarker";
-            vent.transform.position = new Vector3(.62f, 2, -1.35f);
-            vent.transform.localScale = new Vector3(.6f, .55f, .06f);
-            vent.GetComponent<Renderer>().sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(Generated + "/Green.mat");
-            VentLabel(vent.transform, "OutdoorLabel", -.55f, Quaternion.identity);
-            VentLabel(vent.transform, "OutdoorLabelFront", .55f, Quaternion.Euler(0, 180, 0));
-        }
-
-        static void VentLabel(Transform vent, string name, float z, Quaternion rotation)
-        {
-            var o = new GameObject(name);
-            o.transform.SetParent(vent, false);
-            o.transform.localPosition = new Vector3(0, 0, z);
-            o.transform.localRotation = rotation;
-            o.transform.localScale = new Vector3(1 / .6f, 1 / .55f, 1 / .06f);
-            var tm = o.AddComponent<TextMesh>();
-            tm.text = "OUTDOORS\nEXHAUST VENT";
-            tm.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            tm.fontSize = 96; tm.characterSize = .04f / 6f * 64f / 96f;
-            tm.anchor = TextAnchor.MiddleCenter; tm.alignment = TextAlignment.Center;
-            o.GetComponent<MeshRenderer>().sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(Generated + "/LabelText.mat");
         }
     }
 }
