@@ -101,27 +101,25 @@ namespace GeneratorTrainer.Editor
         public const string VRPlayerPrefabPath = PrefabFolder + "/VRPlayer.prefab";
         const string StarterAssets = "Assets/Samples/XR Interaction Toolkit/2.5.4/Starter Assets/Prefabs";
         const string XRInteractionSetupPath = StarterAssets + "/XR Interaction Setup.prefab";
-        const string XROriginPath = StarterAssets + "/XR Origin (XR Rig).prefab";
         const string XRSimulatorPrefabPath = "Assets/Samples/XR Interaction Toolkit/2.5.4/XR Device Simulator/XR Device Simulator.prefab";
 
         static VRRig BuildVRRig(UnityEngine.SceneManagement.Scene scene)
         {
             var setupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(XRInteractionSetupPath);
-            var originPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(XROriginPath);
-            if (setupPrefab == null || originPrefab == null)
+            if (setupPrefab == null)
             {
                 Debug.LogError("[MultiplayerSceneBuilder] XR Interaction Toolkit Starter Assets not found under " + StarterAssets + ". VR is not set up.");
                 return null;
             }
             var root = new GameObject("VRRig (local, VR mode only)");
-            // Input actions, interaction manager and the UI event system for the controller rays.
+            // "XR Interaction Setup" already contains everything: input actions, interaction manager, the UI event
+            // system for the controller rays AND the XR Origin rig (head + two controllers, move / turn / teleport).
+            // Do not add a second XR Origin: two rigs = two cameras, and the tablet would attach to the unused one.
             var setup = (GameObject)PrefabUtility.InstantiatePrefab(setupPrefab, scene);
             setup.transform.SetParent(root.transform, false);
-            // Head + two controllers, move / turn / teleport.
-            var origin = (GameObject)PrefabUtility.InstantiatePrefab(originPrefab, scene);
-            origin.transform.SetParent(root.transform, false);
             var rig = root.AddComponent<VRRig>();
-            rig.origin = origin.GetComponent<Unity.XR.CoreUtils.XROrigin>();
+            rig.origin = setup.GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true);
+            if (rig.origin == null) Debug.LogError("[MultiplayerSceneBuilder] No XR Origin found inside XR Interaction Setup.");
             root.SetActive(false);   // desktop players never use it
             return rig;
         }

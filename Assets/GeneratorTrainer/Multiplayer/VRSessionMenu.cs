@@ -9,8 +9,8 @@ namespace GeneratorTrainer.Multiplayer
     // Session menu for VR players (the desktop menu is drawn on the monitor, which a headset does not show).
     // A panel floating in front of the player, operated with the controller ray + trigger:
     //   not connected: "Create session", a keypad to type the 6-character code, "Join", and status messages;
-    //   in a session:  the code, the player count, notices and "Leave session". The left controller's MENU button
-    //                  hides / shows it (it hides itself when you enter a session).
+    //   in a session:  the code, the player count, notices and "Leave session". It stays visible until both players
+    //                  are in (so the code can be read out), then hides; the left controller's MENU button toggles it.
     // Built from Unity UI in code. Uses the same SessionLauncher as the desktop menu.
     public sealed class VRSessionMenu : MonoBehaviour
     {
@@ -26,7 +26,7 @@ namespace GeneratorTrainer.Multiplayer
         Text status, codeText, sessionText, noticeText;
         GameObject idleGroup, sessionGroup;
         string code = "";
-        bool shown = true, wasInSession;
+        bool shown = true, wasInSession, autoHidden;
         string lastNotice = "";
         InputAction menuToggle;
 
@@ -34,7 +34,9 @@ namespace GeneratorTrainer.Multiplayer
         {
             if (launcher == null) launcher = GetComponent<SessionLauncher>();
             Build();
-            menuToggle = new InputAction("MenuToggle", binding: "<XRController>{LeftHand}/menuButton");
+            // Any controller's MENU button (on Quest only the left controller has one; in the XR Device Simulator the
+            // M key presses it on whichever controller is currently being moved).
+            menuToggle = new InputAction("MenuToggle", binding: "<XRController>/menuButton");
             menuToggle.Enable();
             PlaceInFront();
         }
@@ -49,7 +51,10 @@ namespace GeneratorTrainer.Multiplayer
         void Update()
         {
             bool inSession = launcher.State == SessionState.InSession;
-            if (inSession && !wasInSession) shown = false;          // entering the session: get out of the way
+            // Entering the session: keep showing the panel (the creator must read the code to the partner), placed in
+            // front of the new spawn position. It hides itself once both players are in; MENU toggles it after that.
+            if (inSession && !wasInSession) { shown = true; autoHidden = false; PlaceInFront(); }
+            if (inSession && !autoHidden && launcher.PlayerCount >= SessionLauncher.MaxPlayers) { shown = false; autoHidden = true; }
             if (!inSession && !shown) { shown = true; PlaceInFront(); }
             wasInSession = inSession;
 
